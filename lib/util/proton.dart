@@ -12,6 +12,9 @@ import 'package:path/path.dart' as p;
 /// of game detection and lets KaKa stop exactly the processes it started.
 const String trainerMarkerEnv = 'KAKA_TRAINER';
 
+/// Library entry id of the trainer a KaKa-started process belongs to.
+const String trainerIdEnv = 'KAKA_TRAINER_ID';
+
 const Set<String> _protonVerbs = {'waitforexitandrun', 'run', 'runinprefix'};
 
 /// A snapshot of one process from `/proc`.
@@ -210,6 +213,16 @@ String? findSteamRoot(String home, {String? override, required bool Function(Str
 /// already set-up prefix (callers ensure the game finished setting it up) and a
 /// Proton build that knows the verb; older builds fall back to `run`.
 String trainerVerb({required String protonScript}) => protonScript.contains('"runinprefix"') ? 'runinprefix' : 'run';
+
+/// Whether [proc] belongs to trainer [id] that KaKa started from [trainerPath]:
+/// it carries KaKa's marker and the entry id, and its command line names the
+/// trainer executable. Shared Wine services never match, so stopping matched
+/// processes cannot hit the game.
+bool isTrainerProcess(ProcessInfo proc, String id, String trainerPath) {
+  if (proc.env[trainerMarkerEnv] != '1' || proc.env[trainerIdEnv] != id) return false;
+  final exe = _exeName(trainerPath).toLowerCase();
+  return proc.cmdline.any((arg) => _exeName(arg).toLowerCase() == exe);
+}
 
 /// Whether any process (game, trainer, wineserver, ...) uses the Proton prefix
 /// at [compatDataPath]. Proton exports STEAM_COMPAT_DATA_PATH to everything it

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -29,10 +30,15 @@ class LibraryController extends ChangeNotifier {
   List<TrainerEntry> _trainers = [];
   bool _loading = true;
   String _language = languageOptions.first;
+  Set<String> _running = {};
+  Timer? _monitor;
 
   List<TrainerEntry> get trainers => List.unmodifiable(_trainers);
 
   bool get loading => _loading;
+
+  /// Whether the trainer of entry [id] has a live process (refreshed by [refreshRunning]).
+  bool isRunning(String id) => _running.contains(id);
 
   /// Display name from [languageOptions].
   String get language => _language;
@@ -84,19 +90,21 @@ class LibraryController extends ChangeNotifier {
   }
 
   /// Moves [entry] to the front and launches it. Returns null on success, or
-  /// the failure with a user-facing message.
+  /// the failure with a user-facing message. A trainer that is already running
+  /// is not started a second time (FLiNG trainers fail on a second instance).
   Future<LaunchException?> launch(TrainerEntry entry, AppLocalizations l10n) async {
+    refreshRunning();
+    if (isRunning(entry.id)) return LaunchException(l10n.trainerAlreadyRunning(entry.name));
     _trainers.removeWhere((e) => e.id == entry.id);
     _trainers.insert(0, entry);
     notifyListeners();
     await _saveLibrary();
     try {
       final plan = await launcher.launch(entry, l10n);
-      if (entry.lastPrefix != plan.compatDataPath) {
-        entry.lastPrefix = plan.compatDataPath;
-        notifyListeners();
-        await _saveLibrary();
-      }
+      entry.lastPrefix = plan.compatDataPath;
+      _running = {..._running, entry.id};
+      notifyListeners();
+      await _saveLibrary();
       return null;
     } on LaunchException catch (e) {
       return e;
@@ -104,6 +112,39 @@ class LibraryController extends ChangeNotifier {
       debugPrint('Launch failed: $e');
       return LaunchException(e.toString());
     }
+  }
+
+  /// Polls which trainers run, every [interval], until [dispose].
+  void startMonitoring({Duration interval = const Duration(seconds: 2)}) {
+    _monitor ??= Timer.periodic(interval, (_) => refreshRunning());
+    refreshRunning();
+  }
+
+  /// Re-reads the process list; notifies listeners only when the set changed.
+  void refreshRunning() {
+    final now = launcher.runningIds(_trainers, _readProcesses());
+    if (setEquals(now, _running)) return;
+    _running = now;
+    notifyListeners();
+  }
+
+  /// Stops [entry]'s trainer and waits up to [timeout] for it to exit.
+  /// Returns whether it is gone.
+  Future<bool> stop(TrainerEntry entry, {Duration timeout = const Duration(seconds: 5)}) async {
+    launcher.stop(entry, _readProcesses());
+    final deadline = DateTime.now().add(timeout);
+    while (true) {
+      refreshRunning();
+      if (!isRunning(entry.id)) return true;
+      if (DateTime.now().isAfter(deadline)) return false;
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+  }
+
+  @override
+  void dispose() {
+    _monitor?.cancel();
+    super.dispose();
   }
 
   /// Resets FLiNG trainer state in the prefix [entry] last ran in, see

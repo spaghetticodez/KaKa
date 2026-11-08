@@ -45,5 +45,10 @@
   "resetTrainerDataConfirm": "Für FLiNG-Trainer, die \"previous trainer instance did not exit properly\" melden.\n\nSchließe zuerst Spiel und Trainer. KaKa löscht dann den Ordner FLiNGTrainer und leert den Temp-Ordner im Präfix des Spiels:\n\n{paths}\n\nSonst wird nichts verändert.",
   "resetTrainerDataDone": "Trainer-Daten zurückgesetzt ({count} Einträge entfernt)",
   "prefixInUse": "Im Präfix laufen noch das Spiel oder ein Trainer. Schließe sie und versuche es erneut.",
-  "cleanupOutsidePrefix": "Nicht zurückgesetzt: Der AppData-Ordner dieses Präfixes zeigt aus dem Präfix heraus."
+  "cleanupOutsidePrefix": "Nicht zurückgesetzt: Der AppData-Ordner dieses Präfixes zeigt aus dem Präfix heraus.",
+  "running": "Läuft",
+  "stop": "Beenden",
+  "trainerAlreadyRunning": "{name} läuft bereits.",
+  "trainerStopped": "Trainer beendet: {name}",
+  "trainerStopFailed": "{name} wurde noch nicht beendet. Schließe ihn über sein eigenes Fenster."
 }

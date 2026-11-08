@@ -143,6 +143,22 @@ void main() {
     });
   });
 
+  group('isTrainerProcess', () {
+    const id = 'abc123';
+    const path = '/home/u/Trainers/Elden Ring Trainer.exe';
+    const marked = {trainerMarkerEnv: '1', trainerIdEnv: id};
+    test('matches the proton wrapper and the Wine process of this trainer entry', () {
+      expect(isTrainerProcess(proc(1, marked, ['python3', '/p/proton', 'runinprefix', path]), id, path), isTrue);
+      expect(isTrainerProcess(proc(2, marked, [r'Z:\home\u\Trainers\ELDEN RING TRAINER.EXE']), id, path), isTrue);
+    });
+    test('never matches another entry, an unmarked process or a shared Wine service', () {
+      expect(isTrainerProcess(proc(3, {trainerMarkerEnv: '1', trainerIdEnv: 'other'}, [path]), id, path), isFalse);
+      expect(isTrainerProcess(proc(4, {trainerIdEnv: id}, [path]), id, path), isFalse);
+      expect(isTrainerProcess(proc(5, marked, ['/p/files/bin/wineserver']), id, path), isFalse);
+      expect(isTrainerProcess(proc(6, marked, [r'C:\windows\system32\explorer.exe']), id, path), isFalse);
+    });
+  });
+
   group('prefixInUse', () {
     const compat = '/games/steamapps/compatdata/1245620';
     test('matches STEAM_COMPAT_DATA_PATH (any spelling) and WINEPREFIX, including KaKa trainers', () {

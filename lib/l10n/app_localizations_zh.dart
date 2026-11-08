@@ -164,4 +164,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cleanupOutsidePrefix => '未重置：此前缀的 AppData 文件夹指向前缀之外。';
+
+  @override
+  String get running => '运行中';
+
+  @override
+  String get stop => '停止';
+
+  @override
+  String trainerAlreadyRunning(Object name) {
+    return '$name 已在运行。';
+  }
+
+  @override
+  String trainerStopped(Object name) {
+    return '修改器已停止：$name';
+  }
+
+  @override
+  String trainerStopFailed(Object name) {
+    return '$name 尚未退出。请在它自己的窗口中关闭。';
+  }
 }

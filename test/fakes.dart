@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:kaka/l10n/app_localizations.dart';
 import 'package:kaka/util/dto.dart';
 import 'package:kaka/util/game_launcher.dart';
+import 'package:kaka/util/proton.dart';
 import 'package:kaka/util/storage.dart';
 
 class MemoryStorage extends LocalStorage {
@@ -45,12 +46,29 @@ class FakeLauncher extends TrainerLauncher {
   final List<String> launched = [];
   int stopAllCalls = 0;
 
+  /// Ids with a "live" trainer process. Launch adds, stop removes unless [stubborn].
+  final Set<String> live = {};
+  bool stubborn = false;
+
   @override
   Future<LaunchPlan> launch(TrainerEntry entry, AppLocalizations l10n) async {
     launched.add(entry.id);
     final error = failure;
     if (error != null) throw error;
+    live.add(entry.id);
     return LaunchPlan(protonScript: '/proton/proton', compatDataPath: prefix, clientInstallPath: '/steam', verb: 'runinprefix');
+  }
+
+  @override
+  Set<String> runningIds(Iterable<TrainerEntry> entries, Iterable<ProcessInfo> processes) => {
+        for (final e in entries)
+          if (live.contains(e.id)) e.id,
+      };
+
+  @override
+  int stop(TrainerEntry entry, Iterable<ProcessInfo> processes) {
+    if (stubborn) return 1;
+    return live.remove(entry.id) ? 1 : 0;
   }
 
   @override

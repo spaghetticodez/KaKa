@@ -91,6 +91,46 @@ void main() {
     expect(c.resetTrainerData(trainer('never-launched')), 0);
   });
 
+  test('a running trainer is not launched twice; stop clears it', () async {
+    final entry = controller.trainers.first;
+    expect(await controller.launch(entry, l10n), isNull);
+    expect(controller.isRunning(entry.id), isTrue);
+
+    final again = await controller.launch(entry, l10n);
+    expect(again?.message, l10n.trainerAlreadyRunning(entry.name));
+    expect(launcher.launched, [entry.id], reason: 'no second process');
+
+    expect(await controller.stop(entry), isTrue);
+    expect(controller.isRunning(entry.id), isFalse);
+  });
+
+  test('stop gives up after the timeout when the trainer does not exit', () async {
+    launcher
+      ..live.add('a')
+      ..stubborn = true;
+    controller.refreshRunning();
+    expect(await controller.stop(controller.trainers.first, timeout: const Duration(milliseconds: 300)), isFalse);
+    expect(controller.isRunning('a'), isTrue);
+  });
+
+  test('refreshRunning notifies only on change; monitoring polls until dispose', () async {
+    var notified = 0;
+    controller.addListener(() => notified++);
+    controller.refreshRunning();
+    expect(notified, 0);
+
+    controller.startMonitoring(interval: const Duration(milliseconds: 20));
+    launcher.live.add('b');
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    expect(controller.isRunning('b'), isTrue);
+    expect(notified, 1);
+
+    controller.dispose();
+    launcher.live.clear();
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    expect(controller.isRunning('b'), isTrue, reason: 'no polling after dispose');
+  });
+
   test('launch returns the LaunchException, with its log path', () async {
     launcher.failure = LaunchException(l10n.gameNotRunning, logPath: '/logs/x.log');
     final error = await controller.launch(controller.trainers.first, l10n);

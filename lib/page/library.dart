@@ -6,10 +6,21 @@ import '../l10n/app_localizations.dart';
 import '../util/dto.dart';
 
 class LibraryPage extends StatefulWidget {
-  const LibraryPage({super.key, required this.trainers, required this.onLaunch, required this.onEdit, required this.onRemove, required this.onReset});
+  const LibraryPage({
+    super.key,
+    required this.trainers,
+    required this.isRunning,
+    required this.onLaunch,
+    required this.onStop,
+    required this.onEdit,
+    required this.onRemove,
+    required this.onReset,
+  });
 
   final List<TrainerEntry> trainers;
+  final bool Function(String id) isRunning;
   final Future<void> Function(TrainerEntry entry) onLaunch;
+  final Future<void> Function(TrainerEntry entry) onStop;
   final void Function(TrainerEntry entry) onEdit;
   final void Function(TrainerEntry entry) onRemove;
 
@@ -22,17 +33,21 @@ class LibraryPage extends StatefulWidget {
 
 class _LibraryPageState extends State<LibraryPage> {
   String _hoveredId = '';
-  final Set<String> _launching = {};
 
-  Future<void> _launch(TrainerEntry entry) async {
-    if (_launching.contains(entry.id)) return;
-    setState(() => _launching.add(entry.id));
+  /// Entries with a launch or stop in progress.
+  final Set<String> _busy = {};
+
+  Future<void> _run(TrainerEntry entry, Future<void> Function(TrainerEntry entry) action) async {
+    if (_busy.contains(entry.id)) return;
+    setState(() => _busy.add(entry.id));
     try {
-      await widget.onLaunch(entry);
+      await action(entry);
     } finally {
-      if (mounted) setState(() => _launching.remove(entry.id));
+      if (mounted) setState(() => _busy.remove(entry.id));
     }
   }
+
+  Future<void> _launch(TrainerEntry entry) => _run(entry, widget.onLaunch);
 
   ImageProvider _cover(TrainerEntry entry) {
     if (entry.coverImagePath.isNotEmpty && File(entry.coverImagePath).existsSync()) {
@@ -52,10 +67,26 @@ class _LibraryPageState extends State<LibraryPage> {
     );
   }
 
+  Widget _runningBadge(AppLocalizations l10n) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.65), borderRadius: BorderRadius.circular(10)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.circle, size: 9, color: Color(0xFF3DFFE9)),
+          const SizedBox(width: 5),
+          Text(l10n.running, style: const TextStyle(fontSize: 12, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
   Widget _card(BuildContext context, TrainerEntry entry) {
     final l10n = AppLocalizations.of(context)!;
-    final launching = _launching.contains(entry.id);
-    final showOverlay = launching || _hoveredId == entry.id;
+    final busy = _busy.contains(entry.id);
+    final running = widget.isRunning(entry.id);
+    final showOverlay = busy || _hoveredId == entry.id;
     return Column(
       children: [
         InkWell(
@@ -69,35 +100,41 @@ class _LibraryPageState extends State<LibraryPage> {
               borderRadius: BorderRadius.circular(10),
               image: DecorationImage(image: _cover(entry), fit: BoxFit.cover),
             ),
-            child: showOverlay
-                ? Column(children: [
-                    Container(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          if (entry.lastPrefix.isNotEmpty)
-                            _iconButton(Icons.cleaning_services_outlined, l10n.resetTrainerData, () => widget.onReset(entry)),
-                          _iconButton(Icons.edit_outlined, l10n.edit, () => widget.onEdit(entry)),
-                          _iconButton(Icons.cancel_outlined, l10n.remove, () => widget.onRemove(entry)),
-                        ],
+            child: Stack(
+              children: [
+                if (showOverlay)
+                  Positioned.fill(
+                    child: Column(children: [
+                      Container(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            if (entry.lastPrefix.isNotEmpty)
+                              _iconButton(Icons.cleaning_services_outlined, l10n.resetTrainerData, () => widget.onReset(entry)),
+                            _iconButton(Icons.edit_outlined, l10n.edit, () => widget.onEdit(entry)),
+                            _iconButton(Icons.cancel_outlined, l10n.remove, () => widget.onRemove(entry)),
+                          ],
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    SizedBox(
-                      height: 40,
-                      width: 160,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00D3C4)),
-                        onPressed: launching ? null : () => _launch(entry),
-                        child: launching
-                            ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : Text(l10n.launch),
+                      const Spacer(),
+                      SizedBox(
+                        height: 40,
+                        width: 160,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: running ? const Color(0xFFD64545) : const Color(0xFF00D3C4)),
+                          onPressed: busy ? null : () => running ? _run(entry, widget.onStop) : _launch(entry),
+                          child: busy
+                              ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : Text(running ? l10n.stop : l10n.launch),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 25),
-                  ])
-                : null,
+                      const SizedBox(height: 25),
+                    ]),
+                  ),
+                if (running) Positioned(left: 8, bottom: showOverlay ? 75 : 8, child: _runningBadge(l10n)),
+              ],
+            ),
           ),
         ),
         Container(

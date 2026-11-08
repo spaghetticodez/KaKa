@@ -65,9 +65,11 @@ void main() {
     await tester.pump();
   }
 
-  /// Lets a snack bar run out so no timer is left pending.
+  /// Lets a snack bar run out so no timer is left pending. Its display timer
+  /// only starts after the entrance animation, so settle first.
   Future<void> drainSnackBar(WidgetTester tester) async {
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
   }
 
@@ -145,6 +147,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(fling.existsSync(), isFalse);
     expect(find.text(l10n.resetTrainerDataDone(1)), findsOneWidget);
+    await drainSnackBar(tester);
+  });
+
+  testWidgets('a running trainer shows a badge and a Stop button, and is not launched twice', (tester) async {
+    launcher.live.add('a');
+    await pumpApp(tester);
+    controller.refreshRunning();
+    await tester.pump();
+    expect(find.text(l10n.running), findsOneWidget, reason: 'badge is visible without hovering');
+
+    await tester.tap(find.byKey(const ValueKey('trainer-card-a')));
+    await tester.pump();
+    expect(launcher.launched, isEmpty);
+    expect(find.text(l10n.trainerAlreadyRunning('Game a')), findsOneWidget);
+    await drainSnackBar(tester);
+
+    await hoverCard(tester, 'a');
+    await tester.tap(find.widgetWithText(ElevatedButton, l10n.stop));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.trainerStopped('Game a')), findsOneWidget);
+    expect(find.text(l10n.running), findsNothing);
+    expect(find.widgetWithText(ElevatedButton, l10n.launch), findsOneWidget);
     await drainSnackBar(tester);
   });
 

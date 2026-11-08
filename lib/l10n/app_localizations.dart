@@ -374,6 +374,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not reset: the AppData folder of this prefix points outside the prefix.'**
   String get cleanupOutsidePrefix;
+
+  /// No description provided for @running.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get running;
+
+  /// No description provided for @stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stop;
+
+  /// No description provided for @trainerAlreadyRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is already running.'**
+  String trainerAlreadyRunning(Object name);
+
+  /// No description provided for @trainerStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Trainer stopped: {name}'**
+  String trainerStopped(Object name);
+
+  /// No description provided for @trainerStopFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} did not exit yet. Close it from its own window.'**
+  String trainerStopFailed(Object name);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

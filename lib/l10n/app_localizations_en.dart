@@ -165,4 +165,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cleanupOutsidePrefix => 'Not reset: the AppData folder of this prefix points outside the prefix.';
+
+  @override
+  String get running => 'Running';
+
+  @override
+  String get stop => 'Stop';
+
+  @override
+  String trainerAlreadyRunning(Object name) {
+    return '$name is already running.';
+  }
+
+  @override
+  String trainerStopped(Object name) {
+    return 'Trainer stopped: $name';
+  }
+
+  @override
+  String trainerStopFailed(Object name) {
+    return '$name did not exit yet. Close it from its own window.';
+  }
 }

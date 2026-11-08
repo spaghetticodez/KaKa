@@ -20,6 +20,7 @@ const String fakeProton = r'''#!/bin/bash
   echo "PWD:$PWD"
   echo "DATA:$STEAM_COMPAT_DATA_PATH"
   echo "MARK:$KAKA_TRAINER"
+  echo "ID:$KAKA_TRAINER_ID"
 } > "$(dirname "$0")/record-$(basename "$2").txt"
 echo "wine: hello from fake proton"
 if [ "$(basename "$2")" = "Crash.exe" ]; then
@@ -104,6 +105,7 @@ void main() {
     expect(record, contains('PWD:${trainers.path}'));
     expect(record, contains('DATA:$prefix'));
     expect(record, contains('MARK:1'));
+    expect(record, contains('ID:${e.id}'));
 
     bool trainerAlive() => readProcesses().any((proc) => proc.env[trainerMarkerEnv] == '1' && proc.cmdline.any((a) => a.endsWith('Trainer.exe')));
     expect(trainerAlive(), isTrue);
@@ -119,6 +121,22 @@ void main() {
 
     final log = Directory(p.join(tmp.path, 'logs')).listSync().single as File;
     expect(log.readAsStringSync(), contains('hello from fake proton'));
+  });
+
+  test('a running trainer is found per entry and Stop ends only that one', () async {
+    final e = entry('Trainer.exe');
+    final twin = TrainerEntry(id: 'twin', name: 'Same exe, other entry', trainerPath: e.trainerPath);
+    await launcher.launch(e, l10n);
+
+    expect(launcher.runningIds([e, twin], readProcesses()), {e.id});
+
+    expect(launcher.stop(twin, readProcesses()), 0, reason: 'another entry with the same exe matches nothing');
+    expect(launcher.stop(e, readProcesses()), greaterThan(0));
+    for (var i = 0; i < 50 && launcher.runningIds([e], readProcesses()).isNotEmpty; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    expect(launcher.runningIds([e], readProcesses()), isEmpty);
+    expect(game.kill(ProcessSignal.sigcont), isTrue, reason: 'the game process must survive stop');
   });
 
   test('a trainer that exits immediately reports the exit code and output', () async {

@@ -131,8 +131,17 @@ void main() {
     expect(inPrefix(prefix).where((e) => e.cmdline.any((a) => a.endsWith('/wineserver'))), hasLength(1),
         reason: 'the trainer must join the game\'s wineserver, not start a second one');
 
-    await launcher.stopAll();
+    // The Wine process of the trainer itself must carry the entry id, so KaKa
+    // can show it as running and stop exactly this trainer.
+    expect(
+        inPrefix(prefix).any((proc) => proc.env[trainerIdEnv] == entry.id && proc.cmdline.any((a) => a.toLowerCase().endsWith('faketrainer.exe') && a.contains(r'\'))),
+        isTrue,
+        reason: describe(prefix));
+    expect(launcher.runningIds([entry], readProcesses()), {entry.id});
+
+    expect(launcher.stop(entry, readProcesses()), greaterThan(0));
     expect(await waitFor(() => !wineRunning(prefix, 'FakeTrainer.exe'), const Duration(seconds: 20)), isTrue);
+    expect(launcher.runningIds([entry], readProcesses()), isEmpty);
     expect(wineRunning(prefix, 'FakeGame.exe'), isTrue, reason: 'stopping trainers must not touch the game');
   }, skip: skip, timeout: const Timeout(Duration(minutes: 6)));
 }

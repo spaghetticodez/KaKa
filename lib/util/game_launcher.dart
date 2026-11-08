@@ -68,9 +68,8 @@ class TrainerLauncher {
 
   final Duration startupWatch;
 
-  /// Executable names of trainers started in this session (lower case), used to
-  /// stop exactly those processes on exit.
-  final Set<String> _startedExes = {};
+  /// Trainers started in this session (entry id -> trainer path), stopped on exit.
+  final Map<String, String> _started = {};
 
   /// Resolves the plan and starts the trainer; returns the plan that was used.
   /// Throws [LaunchException] with a user-facing message on failure.
@@ -156,6 +155,7 @@ class TrainerLauncher {
           'STEAM_COMPAT_CLIENT_INSTALL_PATH': plan.clientInstallPath,
           'STEAM_COMPAT_DATA_PATH': plan.compatDataPath,
           trainerMarkerEnv: '1',
+          trainerIdEnv: entry.id,
         },
       );
     } catch (e) {
@@ -163,7 +163,7 @@ class TrainerLauncher {
       await sink.close();
       rethrow;
     }
-    _startedExes.add(p.basename(entry.trainerPath).toLowerCase());
+    _started[entry.id] = entry.trainerPath;
 
     final stdoutDone = process.stdout.listen(sink.add).asFuture<void>();
     final stderrDone = process.stderr.listen(sink.add).asFuture<void>();
@@ -200,16 +200,34 @@ class TrainerLauncher {
     return File(p.join(logDir.path, '$stamp-$safe.log'));
   }
 
+  /// Ids of [entries] with a live trainer process (see [isTrainerProcess]).
+  /// Also finds trainers a previous KaKa session left running.
+  Set<String> runningIds(Iterable<TrainerEntry> entries, Iterable<ProcessInfo> processes) {
+    final procs = processes.where((proc) => proc.env[trainerMarkerEnv] == '1').toList();
+    return {
+      for (final e in entries)
+        if (procs.any((proc) => isTrainerProcess(proc, e.id, e.trainerPath))) e.id,
+    };
+  }
+
+  /// Sends SIGTERM to the processes of [entry]'s trainer; returns how many.
+  int stop(TrainerEntry entry, Iterable<ProcessInfo> processes) {
+    var signalled = 0;
+    for (final proc in processes) {
+      if (isTrainerProcess(proc, entry.id, entry.trainerPath) && Process.killPid(proc.pid, ProcessSignal.sigterm)) signalled++;
+    }
+    return signalled;
+  }
+
   /// Stops trainers started by this launcher. Only processes carrying the KaKa
-  /// marker *and* the trainer's executable name are signalled, so Wine services
-  /// shared with a running game (wineserver, explorer.exe, ...) survive.
+  /// marker, the entry id *and* the trainer's executable name are signalled, so
+  /// Wine services shared with a running game (wineserver, explorer.exe, ...) survive.
   Future<void> stopAll() async {
-    if (_startedExes.isEmpty) return;
+    if (_started.isEmpty) return;
     for (final proc in readProcesses()) {
       if (proc.env[trainerMarkerEnv] != '1') continue;
-      final mentionsTrainer = proc.cmdline.any((arg) => _startedExes.contains(p.basename(arg.replaceAll('\\', '/')).toLowerCase()));
-      if (!mentionsTrainer) continue;
-      Process.killPid(proc.pid, ProcessSignal.sigterm);
+      final path = _started[proc.env[trainerIdEnv]];
+      if (path != null && isTrainerProcess(proc, proc.env[trainerIdEnv]!, path)) Process.killPid(proc.pid, ProcessSignal.sigterm);
     }
   }
 }

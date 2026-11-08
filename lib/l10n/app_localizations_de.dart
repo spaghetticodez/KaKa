@@ -165,4 +165,25 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cleanupOutsidePrefix => 'Nicht zurückgesetzt: Der AppData-Ordner dieses Präfixes zeigt aus dem Präfix heraus.';
+
+  @override
+  String get running => 'Läuft';
+
+  @override
+  String get stop => 'Beenden';
+
+  @override
+  String trainerAlreadyRunning(Object name) {
+    return '$name läuft bereits.';
+  }
+
+  @override
+  String trainerStopped(Object name) {
+    return 'Trainer beendet: $name';
+  }
+
+  @override
+  String trainerStopFailed(Object name) {
+    return '$name wurde noch nicht beendet. Schließe ihn über sein eigenes Fenster.';
+  }
 }

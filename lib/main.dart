@@ -48,7 +48,8 @@ Future<void> main() async {
   });
 
   runApp(KaKaApp(controller: controller, onQuit: quit));
-  unawaited(controller.load());
+  await controller.load();
+  controller.startMonitoring();
 }
 
 class KaKaApp extends StatelessWidget {
@@ -142,6 +143,10 @@ class HomePage extends StatelessWidget {
 
   Future<void> _launch(BuildContext context, TrainerEntry entry) async {
     final l10n = AppLocalizations.of(context)!;
+    if (controller.isRunning(entry.id)) {
+      showSnakeBar(context: context, message: l10n.trainerAlreadyRunning(entry.name), time: 2);
+      return;
+    }
     final error = await controller.launch(entry, l10n);
     if (!context.mounted) return;
     if (error == null) {
@@ -150,6 +155,13 @@ class HomePage extends StatelessWidget {
       // Not awaited: the card must leave its "launching" state while the dialog is open.
       unawaited(showLaunchError(context, error, openLog: controller.openLog));
     }
+  }
+
+  Future<void> _stop(BuildContext context, TrainerEntry entry) async {
+    final l10n = AppLocalizations.of(context)!;
+    final stopped = await controller.stop(entry);
+    if (!context.mounted) return;
+    showSnakeBar(context: context, message: stopped ? l10n.trainerStopped(entry.name) : l10n.trainerStopFailed(entry.name), time: 3);
   }
 
   Widget _appBarButton(IconData icon, String tooltip, VoidCallback onPressed) {
@@ -193,7 +205,9 @@ class HomePage extends StatelessWidget {
             ? const Center(child: CircularProgressIndicator())
             : LibraryPage(
                 trainers: controller.trainers,
+                isRunning: controller.isRunning,
                 onLaunch: (entry) => _launch(context, entry),
+                onStop: (entry) => _stop(context, entry),
                 onEdit: (entry) => _editTrainer(context, entry),
                 onRemove: (entry) => _removeTrainer(context, entry),
                 onReset: (entry) => _resetTrainerData(context, entry),

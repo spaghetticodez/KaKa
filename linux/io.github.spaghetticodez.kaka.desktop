@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=KaKa Trainer Launcher
+GenericName=Trainer Launcher
+Comment=Run your own game trainers inside the Proton prefix of the running game
+Exec=kaka
+Icon=io.github.spaghetticodez.kaka
+Terminal=false
+Categories=Game;
+Keywords=trainer;proton;wine;steam;cheat;
+StartupWMClass=io.github.spaghetticodez.kaka

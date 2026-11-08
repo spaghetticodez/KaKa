@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="image/LaLa_round.png" width="120" alt="KaKa logo">
+  <img src="image/kaka.png" width="120" alt="KaKa logo">
   <h1>KaKa Trainer Launcher</h1>
   <p>Run your own Windows game trainers inside the Proton prefix of the game you are playing — on Linux.</p>
 </div>

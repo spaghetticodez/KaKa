@@ -179,7 +179,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
       appBar: AppBar(
         backgroundColor: Theme.of(context).primaryColor,
         elevation: 0,
-        leading: const Icon(Icons.nightlight_outlined),
+        leading: Padding(padding: const EdgeInsets.all(12), child: Image.asset('image/kaka.png', filterQuality: FilterQuality.medium)),
         title: Text(l10n.title),
         actions: [
           _appBarButton(Icons.add, l10n.addTrainer, _addTrainer),

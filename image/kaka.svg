@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>KaKa Trainer Launcher</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A3270"/>
+      <stop offset="1" stop-color="#11153A"/>
+    </linearGradient>
+    <linearGradient id="k" gradientUnits="userSpaceOnUse" x1="112" y1="84" x2="400" y2="428">
+      <stop offset="0" stop-color="#3DFFE9"/>
+      <stop offset="1" stop-color="#00A6D6"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+    <clipPath id="tile">
+      <rect x="16" y="16" width="480" height="480" rx="112"/>
+    </clipPath>
+  </defs>
+
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
+  <g clip-path="url(#tile)">
+    <!-- soft highlight in the top-left corner -->
+    <circle cx="96" cy="72" r="220" fill="#FFFFFF" opacity="0.05"/>
+  </g>
+
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="72">
+    <!-- glow -->
+    <g stroke="#00D3C4" opacity="0.45" filter="url(#glow)">
+      <path d="M148 120 V392"/>
+      <path d="M364 128 L204 262"/>
+      <path d="M222 246 L364 384"/>
+    </g>
+    <!-- monogram -->
+    <g stroke="url(#k)">
+      <path d="M148 120 V392"/>
+      <path d="M364 128 L204 262"/>
+      <path d="M222 246 L364 384"/>
+    </g>
+  </g>
+</svg>

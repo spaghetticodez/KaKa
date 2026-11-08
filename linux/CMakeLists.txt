@@ -114,6 +114,11 @@ install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)
 
+# Window icon, loaded at runtime by my_application.cc (X11 / XWayland; native
+# Wayland compositors take the icon from the desktop entry matching APPLICATION_ID).
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../image/kaka.png" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
+  COMPONENT Runtime)
+
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 

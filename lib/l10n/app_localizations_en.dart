@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get title => 'LaLa Trainer Launcher';
+  String get title => 'KaKa Trainer Launcher';
 
   @override
   String get library => 'Library';

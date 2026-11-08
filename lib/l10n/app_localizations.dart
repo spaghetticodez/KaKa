@@ -96,7 +96,7 @@ abstract class AppLocalizations {
   /// No description provided for @title.
   ///
   /// In en, this message translates to:
-  /// **'LaLa Trainer Launcher'**
+  /// **'KaKa Trainer Launcher'**
   String get title;
 
   /// No description provided for @library.

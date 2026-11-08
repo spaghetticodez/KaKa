@@ -18,14 +18,14 @@ List<int> _getLocalAppIds(String vdfString) {
 }
 
 Future<List<Game>> getLocalGames(BuildContext context) async {
-  String defaultPath = Platform.isLinux ? "${Platform.environment['HOME']!}/.local/share/Steam" : "C:\\Program Files (x86)\\Steam";
+  String defaultPath = "${Platform.environment['HOME']!}/.local/share/Steam";
   String steamPath = customSteamPath.isEmpty ? defaultPath : customSteamPath;
   if (!await dirExist('$steamPath/steamapps')) {
     if (!context.mounted) return [];
     throw Exception(AppLocalizations.of(context)!.steamPathNotFound(defaultPath, steamPath));
   }
 
-  String libraryPath = Platform.isLinux ? '$steamPath/steamapps/libraryfolders.vdf' : "$steamPath\\steamapps\\libraryfolders.vdf";
+  String libraryPath = '$steamPath/steamapps/libraryfolders.vdf';
 
   final libraryFile = File(libraryPath);
   if (!await libraryFile.exists()) {

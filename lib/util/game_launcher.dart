@@ -42,7 +42,7 @@ Future<void> _launchGame(BuildContext context, String trainerPath, int appId, Vo
     if (!context.mounted) return;
     throw Exception(AppLocalizations.of(context)!.trainerPathNotFound(trainerPath));
   }
-  if (Platform.isLinux) {
+  {
     if (!context.mounted) return;
     String steamPath = await getSteamPath(context, appId, gameCustomSteamPath: gameCustomSteamPath);
     String gamePath = '$steamPath/steamapps/compatdata/$appId';
@@ -85,8 +85,6 @@ Future<void> _launchGame(BuildContext context, String trainerPath, int appId, Vo
         'STEAM_COMPAT_DATA_PATH': gamePath,
       });
     }
-  } else {
-    Process.run(trainerPath, []);
   }
 }
 
@@ -138,12 +136,10 @@ Future<bool> dirExist(String path) async {
 }
 
 Future<void> killAllTrainers() async {
-  if (Platform.isLinux) {
-    if (_inSandbox()) {
-      Process.runSync('flatpak-spawn', ['--host', 'pkill', '-f', r'TrainerCacheData.*\.exe$']);
-    } else {
-      Process.runSync('pkill', ['-f', r'TrainerCacheData.*\.exe$']);
-    }
+  if (_inSandbox()) {
+    Process.runSync('flatpak-spawn', ['--host', 'pkill', '-f', r'TrainerCacheData.*\.exe$']);
+  } else {
+    Process.runSync('pkill', ['-f', r'TrainerCacheData.*\.exe$']);
   }
 }
 

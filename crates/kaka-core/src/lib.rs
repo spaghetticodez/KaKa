@@ -6,4 +6,5 @@
 //! lists, never through a shell.
 
 pub mod model;
+pub mod proton;
 pub mod storage;

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -65,6 +67,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> with WindowListener {
   List<TrainerEntry> trainers = [];
   bool loading = true;
+  bool _closing = false;
 
   @override
   void initState() {
@@ -151,12 +154,16 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   @override
   void onWindowClose() async {
-    if (await windowManager.isPreventClose()) {
-      await _saveConfig();
-      await _saveLibrary();
-      await stopAllTrainers();
-      await windowManager.destroy();
-    }
+    if (_closing || !await windowManager.isPreventClose()) return;
+    _closing = true;
+    await _saveConfig();
+    await _saveLibrary();
+    await stopAllTrainers();
+    // Leave directly instead of windowManager.destroy(): on X11 the Flutter
+    // Linux embedder aborts while disposing its GL framebuffer during window
+    // teardown (no current GL context; upstream LaLa issue #80). Everything
+    // is saved at this point, so there is nothing left to tear down.
+    exit(0);
   }
 
   Widget _appBarButton(IconData icon, String tooltip, VoidCallback onPressed) {

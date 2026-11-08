@@ -90,3 +90,4 @@ useRunningGame = Laufendes Spiel übernehmen
 chooseGame = Welches Spiel?
 quit = Beenden
 about = Über KaKa
+moreActions = Weitere Aktionen

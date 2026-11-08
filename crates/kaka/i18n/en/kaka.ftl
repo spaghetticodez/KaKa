@@ -90,3 +90,4 @@ useRunningGame = Use running game
 chooseGame = Which game?
 quit = Quit
 about = About KaKa
+moreActions = More actions

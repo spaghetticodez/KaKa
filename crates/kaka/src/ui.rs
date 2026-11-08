@@ -354,6 +354,10 @@ impl Ui {
             .menu_model(&menu)
             .build();
         more.add_css_class("flat");
+        // Icon-only: give it a name for tooltips and screen readers.
+        let more_label = tr!("moreActions");
+        more.set_tooltip_text(Some(&more_label));
+        more.update_property(&[gtk::accessible::Property::Label(&more_label)]);
 
         let actions = gtk::Box::new(gtk::Orientation::Horizontal, 6);
         actions.append(&button);

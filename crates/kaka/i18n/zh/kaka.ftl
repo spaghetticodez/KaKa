@@ -90,3 +90,4 @@ useRunningGame = 使用正在运行的游戏
 chooseGame = 选择游戏
 quit = 退出
 about = 关于 KaKa
+moreActions = 更多操作

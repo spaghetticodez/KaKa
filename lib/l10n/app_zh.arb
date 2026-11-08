@@ -50,5 +50,7 @@
   "stop": "停止",
   "trainerAlreadyRunning": "{name} 已在运行。",
   "trainerStopped": "修改器已停止：{name}",
-  "trainerStopFailed": "{name} 尚未退出。请在它自己的窗口中关闭。"
+  "trainerStopFailed": "{name} 尚未退出。请在它自己的窗口中关闭。",
+  "useRunningGame": "使用正在运行的游戏",
+  "chooseGame": "选择游戏"
 }

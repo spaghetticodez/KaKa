@@ -185,4 +185,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String trainerStopFailed(Object name) {
     return '$name 尚未退出。请在它自己的窗口中关闭。';
   }
+
+  @override
+  String get useRunningGame => '使用正在运行的游戏';
+
+  @override
+  String get chooseGame => '选择游戏';
 }

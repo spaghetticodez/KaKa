@@ -186,4 +186,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String trainerStopFailed(Object name) {
     return '$name did not exit yet. Close it from its own window.';
   }
+
+  @override
+  String get useRunningGame => 'Use running game';
+
+  @override
+  String get chooseGame => 'Which game?';
 }

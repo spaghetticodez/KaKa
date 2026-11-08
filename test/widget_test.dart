@@ -7,6 +7,7 @@ import 'package:kaka/l10n/app_localizations.dart';
 import 'package:kaka/main.dart';
 import 'package:kaka/state/library_controller.dart';
 import 'package:kaka/util/game_launcher.dart';
+import 'package:kaka/util/proton.dart';
 import 'package:kaka/util/storage.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
@@ -170,6 +171,57 @@ void main() {
     expect(find.text(l10n.running), findsNothing);
     expect(find.widgetWithText(ElevatedButton, l10n.launch), findsOneWidget);
     await drainSnackBar(tester);
+  });
+
+  testWidgets('add: "Use running game" fills name, AppID and cover from local Steam data', (tester) async {
+    final library = p.join(tmp.path, 'SteamLibrary', 'steamapps');
+    File(p.join(library, 'appmanifest_1245620.acf'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync('"AppState"\n{\n\t"appid"\t\t"1245620"\n\t"name"\t\t"ELDEN RING"\n}\n');
+    final steam = p.join(tmp.path, 'Steam');
+    File(p.join(steam, 'appcache', 'librarycache', '1245620', 'abc', 'library_600x900.jpg'))
+      ..createSync(recursive: true)
+      ..writeAsStringSync('x');
+    var procs = <ProcessInfo>[
+      ProcessInfo(1, {
+        'STEAM_COMPAT_DATA_PATH': p.join(library, 'compatdata', '1245620'),
+        'STEAM_COMPAT_CLIENT_INSTALL_PATH': steam,
+        'SteamAppId': '1245620',
+      }, [
+        r'Z:\games\eldenring.exe'
+      ]),
+    ];
+    controller = LibraryController(storage: storage, launcher: launcher, processes: () => procs);
+    await pumpApp(tester);
+
+    await tester.tap(find.byTooltip(l10n.addTrainer));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.useRunningGame));
+    await tester.pumpAndSettle();
+    final fields = tester.widgetList<TextField>(find.byType(TextField)).toList();
+    expect(fields.first.controller!.text, 'ELDEN RING');
+    expect(fields.last.controller!.text, '1245620');
+    expect(find.text('library_600x900.jpg'), findsOneWidget, reason: 'cover taken from Steam\'s library cache');
+
+    // Two games: the user picks one.
+    procs = [
+      ...procs,
+      ProcessInfo(2, {'STEAM_COMPAT_DATA_PATH': p.join(tmp.path, 'Heroic', 'Prefixes', 'Other')}, [r'Z:\x\Other.exe']),
+    ];
+    await tester.tap(find.text(l10n.useRunningGame));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.chooseGame), findsOneWidget);
+    await tester.tap(find.text('Other'));
+    await tester.pumpAndSettle();
+    expect(tester.widgetList<TextField>(find.byType(TextField)).first.controller!.text, 'Other');
+    expect(tester.widgetList<TextField>(find.byType(TextField)).last.controller!.text, '');
+
+    // No game: a clear message, fields untouched.
+    procs = [];
+    await tester.tap(find.text(l10n.useRunningGame));
+    await tester.pump();
+    expect(find.text(l10n.gameNotRunning), findsOneWidget);
+    expect(tester.widgetList<TextField>(find.byType(TextField)).first.controller!.text, 'Other');
   });
 
   testWidgets('remove asks first; cancel keeps the trainer', (tester) async {

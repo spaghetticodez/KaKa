@@ -186,4 +186,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String trainerStopFailed(Object name) {
     return '$name wurde noch nicht beendet. Schließe ihn über sein eigenes Fenster.';
   }
+
+  @override
+  String get useRunningGame => 'Laufendes Spiel übernehmen';
+
+  @override
+  String get chooseGame => 'Welches Spiel?';
 }

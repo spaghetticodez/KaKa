@@ -50,5 +50,7 @@
   "stop": "Stop",
   "trainerAlreadyRunning": "{name} is already running.",
   "trainerStopped": "Trainer stopped: {name}",
-  "trainerStopFailed": "{name} did not exit yet. Close it from its own window."
+  "trainerStopFailed": "{name} did not exit yet. Close it from its own window.",
+  "useRunningGame": "Use running game",
+  "chooseGame": "Which game?"
 }

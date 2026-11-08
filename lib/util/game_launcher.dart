@@ -102,7 +102,7 @@ class TrainerLauncher {
 
     // Prefer what the game's own launcher exported: always the right drive and Steam root.
     final prefix = game.compatDataPath;
-    final client = game.clientInstallPath ?? _steamRoot() ?? '';
+    final client = game.clientInstallPath ?? steamRoot() ?? '';
 
     var proton = game.protonScript;
     if (proton == null || !_isFile(proton)) {
@@ -127,7 +127,8 @@ class TrainerLauncher {
     return LaunchPlan(protonScript: proton, compatDataPath: prefix, clientInstallPath: client, verb: trainerVerb(protonScript: script));
   }
 
-  String? _steamRoot() {
+  /// Steam install root: the Settings override, else the first detected one.
+  String? steamRoot() {
     final root = findSteamRoot(_home, override: steamPath, dirExists: _dirExists);
     return root == null ? null : _resolve(root);
   }

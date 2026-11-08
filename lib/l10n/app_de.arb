@@ -50,5 +50,7 @@
   "stop": "Beenden",
   "trainerAlreadyRunning": "{name} läuft bereits.",
   "trainerStopped": "Trainer beendet: {name}",
-  "trainerStopFailed": "{name} wurde noch nicht beendet. Schließe ihn über sein eigenes Fenster."
+  "trainerStopFailed": "{name} wurde noch nicht beendet. Schließe ihn über sein eigenes Fenster.",
+  "useRunningGame": "Laufendes Spiel übernehmen",
+  "chooseGame": "Welches Spiel?"
 }

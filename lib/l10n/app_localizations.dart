@@ -404,6 +404,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} did not exit yet. Close it from its own window.'**
   String trainerStopFailed(Object name);
+
+  /// No description provided for @useRunningGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Use running game'**
+  String get useRunningGame;
+
+  /// No description provided for @chooseGame.
+  ///
+  /// In en, this message translates to:
+  /// **'Which game?'**
+  String get chooseGame;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

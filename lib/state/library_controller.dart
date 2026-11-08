@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../util/dto.dart';
+import '../util/game_info.dart';
 import '../util/game_launcher.dart';
 import '../util/language.dart';
 import '../util/proton.dart';
@@ -145,6 +146,15 @@ class LibraryController extends ChangeNotifier {
   void dispose() {
     _monitor?.cancel();
     super.dispose();
+  }
+
+  /// Proton games running right now, with name, AppID and cover filled in from
+  /// local Steam data where available (for "use running game" when adding).
+  List<GameSuggestion> runningGames() {
+    final games = detectRunningGames(_readProcesses());
+    if (games.isEmpty) return const [];
+    final root = launcher.steamRoot();
+    return [for (final g in games) suggestionFor(g, steamRoot: root)];
   }
 
   /// Resets FLiNG trainer state in the prefix [entry] last ran in, see

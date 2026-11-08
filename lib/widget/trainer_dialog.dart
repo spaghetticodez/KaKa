@@ -7,12 +7,16 @@ import 'package:path/path.dart' as p;
 
 import '../l10n/app_localizations.dart';
 import '../util/dto.dart';
+import '../util/game_info.dart';
 
 /// Add or edit a trainer. Pops with the resulting [TrainerEntry], or null on cancel.
 class TrainerDialog extends StatefulWidget {
-  const TrainerDialog({super.key, this.initial});
+  const TrainerDialog({super.key, this.initial, this.detectGames});
 
   final TrainerEntry? initial;
+
+  /// Running Proton games to fill name, AppID and cover from; null hides the button.
+  final List<GameSuggestion> Function()? detectGames;
 
   @override
   State<TrainerDialog> createState() => _TrainerDialogState();
@@ -46,6 +50,37 @@ class _TrainerDialogState extends State<TrainerDialog> {
     final file = await FilePicker.pickFile(type: FileType.image);
     final path = file?.path;
     if (path != null) setState(() => _coverPath = path);
+  }
+
+  /// Fills name, AppID and cover from a running game (asks which one if several run).
+  Future<void> _useRunningGame() async {
+    final l10n = AppLocalizations.of(context)!;
+    final games = widget.detectGames!();
+    if (games.isEmpty) {
+      setState(() => _error = l10n.gameNotRunning);
+      return;
+    }
+    final game = games.length == 1
+        ? games.single
+        : await showDialog<GameSuggestion>(
+            context: context,
+            builder: (context) => SimpleDialog(
+              title: Text(l10n.chooseGame),
+              children: [
+                for (final g in games)
+                  SimpleDialogOption(
+                      onPressed: () => Navigator.of(context).pop(g), child: Text(g.appId == null ? g.name : '${g.name} (AppID ${g.appId})')),
+              ],
+            ),
+          );
+    if (game == null || !mounted) return;
+    setState(() {
+      _error = null;
+      _name.text = game.name;
+      _appId.text = game.appId?.toString() ?? '';
+      final cover = game.coverPath;
+      if (cover != null) _coverPath = cover;
+    });
   }
 
   void _save() {
@@ -131,6 +166,17 @@ class _TrainerDialogState extends State<TrainerDialog> {
               ),
               const SizedBox(height: 8),
               _fileRow(l10n.trainerFile, _trainerPath, _trainerPath == null ? l10n.select : l10n.change, _pickTrainer),
+              if (widget.detectGames != null) ...[
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.sports_esports_outlined, size: 18),
+                    label: Text(l10n.useRunningGame),
+                    onPressed: _useRunningGame,
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               TextField(
                 controller: _name,

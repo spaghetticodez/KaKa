@@ -11,7 +11,9 @@ already have, KaKa finds the running Proton game and starts the trainer in the s
 ## How it works
 
 1. Start your game (Steam, Heroic, Lutris, umu-launcher — anything that runs it with Proton).
-2. In KaKa, click **+**, pick the trainer `.exe`, give it a name (optional cover image).
+2. In KaKa, click **+**, pick the trainer `.exe`, and click **Use running game**: KaKa fills in the game's
+   name, Steam AppID and cover from local Steam data (the game's `appmanifest_*.acf` and Steam's artwork
+   cache; nothing is downloaded). You can also type a name and pick a cover yourself.
 3. Click the trainer card. KaKa:
    - finds the running game through its `STEAM_COMPAT_DATA_PATH` (works for any library drive and
      non-Steam shortcuts),

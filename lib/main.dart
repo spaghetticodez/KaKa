@@ -86,14 +86,16 @@ class HomePage extends StatelessWidget {
   final Future<void> Function() onQuit;
 
   Future<void> _addTrainer(BuildContext context) async {
-    final entry = await showDialog<TrainerEntry>(context: context, barrierDismissible: false, builder: (_) => const TrainerDialog());
+    final entry = await showDialog<TrainerEntry>(
+        context: context, barrierDismissible: false, builder: (_) => TrainerDialog(detectGames: controller.runningGames));
     if (entry == null || !context.mounted) return;
     showSnakeBar(context: context, message: AppLocalizations.of(context)!.trainerAdded);
     await controller.add(entry);
   }
 
   Future<void> _editTrainer(BuildContext context, TrainerEntry entry) async {
-    final updated = await showDialog<TrainerEntry>(context: context, barrierDismissible: false, builder: (_) => TrainerDialog(initial: entry));
+    final updated = await showDialog<TrainerEntry>(
+        context: context, barrierDismissible: false, builder: (_) => TrainerDialog(initial: entry, detectGames: controller.runningGames));
     if (updated == null || !context.mounted) return;
     showSnakeBar(context: context, message: AppLocalizations.of(context)!.trainerUpdated);
     await controller.update(updated);

@@ -7,8 +7,8 @@ class TrainerEntry {
   String trainerPath;
   String coverImagePath;
 
-  /// Optional Steam AppID of the target game. Used to pick the right game when
-  /// several are running, or to find the prefix when the game is not running yet.
+  /// Optional Steam AppID of the target game. Picks the right game when several
+  /// Proton games are running; the game itself must already run.
   int? steamAppId;
 
   TrainerEntry({required this.id, required this.name, required this.trainerPath, this.coverImagePath = '', this.steamAppId});

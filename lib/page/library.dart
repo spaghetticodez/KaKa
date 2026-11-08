@@ -56,6 +56,7 @@ class _LibraryPageState extends State<LibraryPage> {
     return Column(
       children: [
         InkWell(
+          key: ValueKey('trainer-card-${entry.id}'),
           onTap: () => _launch(entry),
           onHover: (hovered) => setState(() => _hoveredId = hovered ? entry.id : ''),
           child: Container(

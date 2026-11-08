@@ -11,8 +11,6 @@ import 'dto.dart';
 const String libraryFileName = 'library.json';
 const String configFileName = 'config.json';
 
-final LocalStorage localStorage = LocalStorage();
-
 class AppConfig {
   final String? language;
   final String steamPath;

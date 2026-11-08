@@ -1,4 +1,3 @@
-String selectedLanguage = 'English';
 const List<String> languageOptions = ['English', '中文', 'German'];
 
 String languageToLocale(String language) {

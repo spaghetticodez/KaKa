@@ -45,9 +45,8 @@ Future<bool> waitFor(bool Function() condition, Duration timeout) async {
   return condition();
 }
 
-String describe(String prefix) => inPrefix(prefix)
-    .map((e) => '  ${e.pid}${e.env[trainerMarkerEnv] == '1' ? ' [kaka]' : ''}: ${e.cmdline.join(' ')}')
-    .join('\n');
+String describe(String prefix) =>
+    inPrefix(prefix).map((e) => '  ${e.pid}${e.env[trainerMarkerEnv] == '1' ? ' [kaka]' : ''}: ${e.cmdline.join(' ')}').join('\n');
 
 Future<void> killPrefix(String prefix) async {
   for (final proc in inPrefix(prefix)) {
@@ -76,25 +75,30 @@ void main() {
     final trainer = copyCmd(Directory(p.join(tmp.path, 'trainers')), 'cmd.exe');
     final entry = TrainerEntry(id: 'real', name: 'Real Proton', trainerPath: trainer.path);
     final logs = Directory(p.join(tmp.path, 'logs'));
+    final launcher = TrainerLauncher(logDir: logs);
 
-    await startTrainer(entry, LaunchPlan(protonScript: proton, compatDataPath: prefix, clientInstallPath: steamRoot), l10n, logDir: logs);
+    await launcher.start(entry, LaunchPlan(protonScript: proton, compatDataPath: prefix, clientInstallPath: steamRoot), l10n);
     final up = await waitFor(() => wineRunning(prefix, 'cmd.exe', marked: true), const Duration(minutes: 3));
     expect(up, isTrue, reason: 'log:\n${logs.listSync().whereType<File>().single.readAsStringSync()}');
     expect(File(p.join(prefix, 'pfx', 'system.reg')).existsSync(), isTrue);
 
-    await stopAllTrainers();
+    await launcher.stopAll();
     expect(await waitFor(() => !wineRunning(prefix, 'cmd.exe'), const Duration(seconds: 20)), isTrue);
   }, skip: skip, timeout: const Timeout(Duration(minutes: 5)));
 
-  test('running game${slr.isEmpty ? '' : ' (Steam Linux Runtime)'}: KaKa detects it, joins its prefix and stops only the trainer',
-      () async {
+  test('running game${slr.isEmpty ? '' : ' (Steam Linux Runtime)'}: KaKa detects it, joins its prefix and stops only the trainer', () async {
     final tmp = Directory.systemTemp.createTempSync('kaka_real_game_');
     final prefix = p.join(tmp.path, 'compatdata', '434343');
     Directory(prefix).createSync(recursive: true);
     final game = copyCmd(Directory(p.join(tmp.path, 'game')), 'FakeGame.exe');
     final trainer = copyCmd(Directory(p.join(tmp.path, 'trainers')), 'FakeTrainer.exe');
 
-    final gameArgs = [if (slr.isNotEmpty) ...[p.join(slr, '_v2-entry-point'), '--verb=waitforexitandrun', '--'], proton, 'waitforexitandrun', game.path];
+    final gameArgs = [
+      if (slr.isNotEmpty) ...[p.join(slr, '_v2-entry-point'), '--verb=waitforexitandrun', '--'],
+      proton,
+      'waitforexitandrun',
+      game.path
+    ];
     final gameProcess = await Process.start(gameArgs.first, gameArgs.sublist(1), environment: {
       'STEAM_COMPAT_DATA_PATH': prefix,
       'STEAM_COMPAT_CLIENT_INSTALL_PATH': steamRoot,
@@ -111,14 +115,15 @@ void main() {
     expect(await waitFor(() => wineRunning(prefix, 'FakeGame.exe'), const Duration(minutes: 3)), isTrue, reason: 'game did not start');
 
     final entry = TrainerEntry(id: 'game', name: 'Fake Trainer', trainerPath: trainer.path, steamAppId: 434343);
-    final plan = resolveLaunchPlan(entry, l10n);
+    final logs = Directory(p.join(tmp.path, 'logs'));
+    final launcher = TrainerLauncher(logDir: logs);
+    final plan = launcher.resolvePlan(entry, l10n);
     expect(plan.compatDataPath, prefix);
     expect(plan.verb, 'runinprefix',
         reason: 'proton=${plan.protonScript} exists=${File(plan.protonScript).existsSync()} '
             'system.reg=${File(p.join(prefix, 'pfx', 'system.reg')).existsSync()} pfx=${Directory(p.join(prefix, 'pfx')).existsSync() ? Directory(p.join(prefix, 'pfx')).listSync().map((e) => p.basename(e.path)).toList() : 'missing'}\n${describe(prefix)}');
 
-    final logs = Directory(p.join(tmp.path, 'logs'));
-    await startTrainer(entry, plan, l10n, logDir: logs);
+    await launcher.start(entry, plan, l10n);
     final up = await waitFor(() => wineRunning(prefix, 'FakeTrainer.exe', marked: true), const Duration(minutes: 1));
     // ignore: avoid_print
     print('processes in the prefix:\n${describe(prefix)}');
@@ -126,7 +131,7 @@ void main() {
     expect(inPrefix(prefix).where((e) => e.cmdline.any((a) => a.endsWith('/wineserver'))), hasLength(1),
         reason: 'the trainer must join the game\'s wineserver, not start a second one');
 
-    await stopAllTrainers();
+    await launcher.stopAll();
     expect(await waitFor(() => !wineRunning(prefix, 'FakeTrainer.exe'), const Duration(seconds: 20)), isTrue);
     expect(wineRunning(prefix, 'FakeGame.exe'), isTrue, reason: 'stopping trainers must not touch the game');
   }, skip: skip, timeout: const Timeout(Duration(minutes: 6)));

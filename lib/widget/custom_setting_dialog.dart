@@ -4,7 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
-import '../util/game_launcher.dart';
+import '../state/library_controller.dart';
 import '../util/language.dart';
 import '../util/widget.dart';
 
@@ -12,10 +12,9 @@ const String _sourceUrl = 'https://github.com/spaghetticodez/KaKa';
 const String _upstreamUrl = 'https://github.com/wyyadd/LaLa';
 
 class CustomSettingDialog extends StatefulWidget {
-  const CustomSettingDialog({super.key, required this.updateLanguage, required this.onConfigChanged});
+  const CustomSettingDialog({super.key, required this.controller});
 
-  final ValueChanged<String> updateLanguage;
-  final Future<void> Function() onConfigChanged;
+  final LibraryController controller;
 
   @override
   State<CustomSettingDialog> createState() => _CustomSettingDialogState();
@@ -36,16 +35,12 @@ class _CustomSettingDialogState extends State<CustomSettingDialog> {
     final l10n = AppLocalizations.of(context)!;
     final selected = await FilePicker.getDirectoryPath();
     if (selected == null) return;
-    setState(() => customSteamPath = selected);
-    await widget.onConfigChanged();
+    await widget.controller.setSteamPath(selected);
     if (!mounted) return;
     showSnakeBar(context: context, message: l10n.steamPathSet);
   }
 
-  Future<void> _resetSteamPath() async {
-    setState(() => customSteamPath = '');
-    await widget.onConfigChanged();
-  }
+  Future<void> _resetSteamPath() => widget.controller.setSteamPath('');
 
   Widget _link(String text, String url) {
     return InkWell(
@@ -59,7 +54,12 @@ class _CustomSettingDialogState extends State<CustomSettingDialog> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(listenable: widget.controller, builder: (context, _) => _build(context));
+  }
+
+  Widget _build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final steamPath = widget.controller.steamPath;
     return Dialog(
       backgroundColor: const Color(0xFF2E3466),
       child: SizedBox(
@@ -85,14 +85,11 @@ class _CustomSettingDialogState extends State<CustomSettingDialog> {
                     width: 140,
                     child: DropdownButton<String>(
                       isExpanded: true,
-                      value: selectedLanguage,
+                      value: widget.controller.language,
                       dropdownColor: const Color(0xFF2E3466),
                       focusColor: Colors.transparent,
                       onChanged: (String? newValue) {
-                        if (newValue != null && newValue != selectedLanguage) {
-                          setState(() => widget.updateLanguage(newValue));
-                          widget.onConfigChanged();
-                        }
+                        if (newValue != null) widget.controller.setLanguage(newValue);
                       },
                       items: [for (final value in languageOptions) DropdownMenuItem<String>(value: value, child: Center(child: Text(value)))],
                     ),
@@ -109,14 +106,14 @@ class _CustomSettingDialogState extends State<CustomSettingDialog> {
                         Text(l10n.steamPath, style: const TextStyle(fontSize: 18)),
                         const SizedBox(height: 4),
                         Text(
-                          customSteamPath.isEmpty ? l10n.steamPathAuto : customSteamPath,
+                          steamPath.isEmpty ? l10n.steamPathAuto : steamPath,
                           style: const TextStyle(color: Colors.grey, fontSize: 13),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
-                  if (customSteamPath.isNotEmpty) TextButton(onPressed: _resetSteamPath, child: Text(l10n.reset)),
+                  if (steamPath.isNotEmpty) TextButton(onPressed: _resetSteamPath, child: Text(l10n.reset)),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00D3C4)),
                     onPressed: _pickSteamPath,

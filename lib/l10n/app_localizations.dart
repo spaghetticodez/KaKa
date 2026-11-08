@@ -297,6 +297,12 @@ abstract class AppLocalizations {
   /// **'Several Proton games are running:\n\n{games}\n\nSet the Steam AppID on this trainer to choose one.'**
   String multipleGamesRunning(Object games);
 
+  /// No description provided for @gameStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'The game is still starting (its Proton prefix is not ready yet).\n\nTry again in a few seconds.'**
+  String get gameStarting;
+
   /// No description provided for @prefixNotFound.
   ///
   /// In en, this message translates to:

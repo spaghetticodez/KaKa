@@ -169,6 +169,18 @@ void main() {
     });
   });
 
+  group('trainerVerb', () {
+    const modern = 'elif sys.argv[1] == "runinprefix":';
+    test('runinprefix for an initialised prefix and a Proton build that supports it', () {
+      expect(trainerVerb(protonScript: modern, prefixInitialised: true), 'runinprefix');
+    });
+    test('run for a fresh prefix (runinprefix would not create it) or an old Proton build', () {
+      expect(trainerVerb(protonScript: modern, prefixInitialised: false), 'run');
+      expect(trainerVerb(protonScript: 'if sys.argv[1] == "run":', prefixInitialised: true), 'run');
+      expect(trainerVerb(protonScript: '', prefixInitialised: true), 'run');
+    });
+  });
+
   group('readProcesses', () {
     late Directory root;
 

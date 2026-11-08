@@ -229,3 +229,16 @@ String? findPrefix(int appId, List<String> libraries, bool Function(String path)
   }
   return null;
 }
+
+/// Chooses the Proton verb used to start a trainer.
+///
+/// `run` goes through Proton's `steam.exe` helper. With GE-Proton 11 and Proton
+/// Experimental 11 (tested without a running Steam client) that helper did not start a
+/// second program while the game's own `steam.exe` ran in the same prefix: the trainer
+/// never appeared.
+/// `runinprefix` runs the exe with Wine directly and joins the game's wineserver,
+/// also when the game runs inside the Steam Linux Runtime container. It skips prefix
+/// creation/upgrade, so it is only used for an initialised prefix and for Proton
+/// builds that know the verb.
+String trainerVerb({required String protonScript, required bool prefixInitialised}) =>
+    prefixInitialised && protonScript.contains('"runinprefix"') ? 'runinprefix' : 'run';

@@ -120,6 +120,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get gameStarting => 'The game is still starting (its Proton prefix is not ready yet).\n\nTry again in a few seconds.';
+
+  @override
   String prefixNotFound(Object appId) {
     return 'Proton prefix for Steam AppID $appId not found.\n\nMake sure the game is installed and has been started with Proton at least once.';
   }

@@ -33,6 +33,7 @@
   "trainerPathNotFound": "Trainer file not found.\n\nPath: {trainerPath}",
   "gameNotRunning": "No running Proton game found.\n\nStart the game first (Steam, Heroic, Lutris or another Proton launcher), then launch the trainer.\n\nTo start the trainer before the game, set the Steam AppID on this trainer.",
   "multipleGamesRunning": "Several Proton games are running:\n\n{games}\n\nSet the Steam AppID on this trainer to choose one.",
+  "gameStarting": "The game is still starting (its Proton prefix is not ready yet).\n\nTry again in a few seconds.",
   "prefixNotFound": "Proton prefix for Steam AppID {appId} not found.\n\nMake sure the game is installed and has been started with Proton at least once.",
   "protonPathNotFound": "Proton installation for this game not found.\n\nPrefix: {prefix}",
   "steamPathNotFound": "Steam installation not found. Set the Steam path in Settings.\n\nChecked:\n{paths}",

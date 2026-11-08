@@ -14,6 +14,7 @@ import 'package:path/path.dart' as p;
 const int fakeAppId = 987654321;
 
 const String fakeProton = r'''#!/bin/bash
+# Like real Proton: case "$1" in run|runinprefix) ... (KaKa checks for "runinprefix")
 {
   echo "ARGS:$*"
   echo "PWD:$PWD"
@@ -47,6 +48,7 @@ void main() {
 
     prefix = p.join(tmp.path, 'library', 'steamapps', 'compatdata', '$fakeAppId');
     Directory(p.join(prefix, 'pfx')).createSync(recursive: true);
+    File(p.join(prefix, 'pfx', 'system.reg')).writeAsStringSync('WINE REGISTRY Version 2\n');
     File(p.join(prefix, 'config_info')).writeAsStringSync('fake-1\n$protonDir/files/share/fonts/\n$protonDir/files/lib/\n');
 
     trainers = Directory(p.join(tmp.path, 'my trainers'))..createSync();
@@ -74,6 +76,13 @@ void main() {
     final plan = resolveLaunchPlan(entry('Trainer.exe'), l10n);
     expect(plan.compatDataPath, prefix);
     expect(plan.protonScript, p.join(protonDir, 'proton'));
+    expect(plan.verb, 'runinprefix');
+  });
+
+  test('refuses while a running game is still creating its prefix', () {
+    File(p.join(prefix, 'pfx', 'system.reg')).deleteSync();
+    expect(() => resolveLaunchPlan(entry('Trainer.exe'), l10n),
+        throwsA(isA<LaunchException>().having((x) => x.message, 'message', l10n.gameStarting)));
   });
 
   test('starts the trainer inside the prefix with the marker, then stops it on exit', () async {
@@ -81,7 +90,7 @@ void main() {
     await startTrainer(e, resolveLaunchPlan(e, l10n), l10n, logDir: Directory(p.join(tmp.path, 'logs')), watch: const Duration(milliseconds: 800));
 
     final record = File(p.join(protonDir, 'record-Trainer.exe.txt')).readAsLinesSync();
-    expect(record, contains('ARGS:run ${e.trainerPath}'));
+    expect(record, contains('ARGS:runinprefix ${e.trainerPath}'));
     expect(record, contains('PWD:${trainers.path}'));
     expect(record, contains('DATA:$prefix'));
     expect(record, contains('MARK:1'));

@@ -120,6 +120,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get gameStarting => 'Das Spiel startet noch (das Proton-Präfix ist noch nicht bereit).\n\nVersuche es in ein paar Sekunden erneut.';
+
+  @override
   String prefixNotFound(Object appId) {
     return 'Proton-Präfix für Steam-AppID $appId nicht gefunden.\n\nStelle sicher, dass das Spiel installiert ist und mindestens einmal mit Proton gestartet wurde.';
   }

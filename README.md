@@ -16,7 +16,9 @@ already have, KaKa finds the running Proton game and starts the trainer in the s
    - finds the running game through its `STEAM_COMPAT_DATA_PATH` (works for any library drive and
      non-Steam shortcuts),
    - uses the same Proton build the game was started with (or the one recorded in the prefix's `config_info`),
-   - runs `proton run <trainer.exe>` with the trainer's own folder as working directory,
+   - runs the trainer with `proton runinprefix` (Wine directly in the game's prefix, joining the game's
+     wineserver — also when Steam runs the game inside the Steam Linux Runtime container), from the
+     trainer's own folder. `proton run` is only used for a prefix that does not exist yet,
    - writes a log to `~/.local/state/kaka/logs/` and shows the error output if the trainer exits immediately.
 
 **Steam AppID (optional, per trainer)** — set it when several Proton games run at once, or when you

@@ -35,7 +35,10 @@ class LaunchPlan {
   final String compatDataPath;
   final String clientInstallPath;
 
-  const LaunchPlan({required this.protonScript, required this.compatDataPath, required this.clientInstallPath});
+  /// Proton verb, see [trainerVerb].
+  final String verb;
+
+  const LaunchPlan({required this.protonScript, required this.compatDataPath, required this.clientInstallPath, this.verb = 'run'});
 }
 
 bool _dirExists(String path) => Directory(path).existsSync();
@@ -113,7 +116,18 @@ LaunchPlan resolveLaunchPlan(TrainerEntry entry, AppLocalizations l10n) {
     if (dir == null) throw LaunchException(l10n.protonPathNotFound(prefix));
     proton = p.join(dir, 'proton');
   }
-  return LaunchPlan(protonScript: proton, compatDataPath: prefix, clientInstallPath: client);
+  String script;
+  try {
+    script = File(proton).readAsStringSync();
+  } on FileSystemException {
+    script = '';
+  }
+  final prefixInitialised = _isFile(p.join(prefix, 'pfx', 'system.reg'));
+  // A running game whose prefix is not initialised yet is still creating it; a
+  // second Proton instance racing into the same prefix could break it.
+  if (game != null && !prefixInitialised) throw LaunchException(l10n.gameStarting);
+  final verb = trainerVerb(protonScript: script, prefixInitialised: prefixInitialised);
+  return LaunchPlan(protonScript: proton, compatDataPath: prefix, clientInstallPath: client, verb: verb);
 }
 
 /// Starts the trainer through Proton and watches it for [watch]. Throws
@@ -124,7 +138,7 @@ Future<void> startTrainer(TrainerEntry entry, LaunchPlan plan, AppLocalizations 
   sink
     ..writeln('# KaKa trainer launch ${DateTime.now().toIso8601String()}')
     ..writeln('# trainer: ${entry.trainerPath}')
-    ..writeln('# proton:  ${plan.protonScript}')
+    ..writeln('# proton:  ${plan.protonScript} ${plan.verb}')
     ..writeln('# prefix:  ${plan.compatDataPath}')
     ..writeln('# steam:   ${plan.clientInstallPath}');
 
@@ -132,7 +146,7 @@ Future<void> startTrainer(TrainerEntry entry, LaunchPlan plan, AppLocalizations 
   try {
     process = await Process.start(
       plan.protonScript,
-      ['run', entry.trainerPath],
+      [plan.verb, entry.trainerPath],
       // Trainers often load files next to themselves.
       workingDirectory: p.dirname(entry.trainerPath),
       environment: {

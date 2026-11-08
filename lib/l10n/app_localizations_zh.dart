@@ -119,6 +119,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get gameStarting => '游戏仍在启动中（其 Proton 前缀尚未就绪）。\n\n请几秒后再试。';
+
+  @override
   String prefixNotFound(Object appId) {
     return '未找到 Steam AppID $appId 的 Proton 前缀。\n\n请确认游戏已安装，并且至少用 Proton 启动过一次。';
   }

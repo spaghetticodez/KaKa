@@ -28,6 +28,20 @@ flutter test             # unit tests live in test/
 flutter build linux --release   # → build/linux/x64/release/bundle/kaka
 ```
 
+Opt-in tests against a real Proton build (not run in CI; Wine's `cmd.exe` stands in for game and trainer):
+
+```sh
+S=~/.local/share/Steam
+KAKA_REAL_PROTON="$S/steamapps/common/Proton - Experimental/proton" KAKA_STEAM_ROOT="$S" \
+KAKA_SLR="$S/steamapps/common/SteamLinuxRuntime_4" flutter test test/real_proton_test.dart
+```
+
+Trainers start with `proton runinprefix`: `proton run` goes through Proton's `steam.exe`
+helper, which did not start a second program while the game's `steam.exe` ran in the prefix
+(observed with GE-Proton 11 and Proton Experimental 11, with and without the Steam Linux
+Runtime, without a running Steam client; not yet checked with Steam running). `runinprefix`
+worked in all of those cases.
+
 ## Layout
 
 | Path | Purpose |

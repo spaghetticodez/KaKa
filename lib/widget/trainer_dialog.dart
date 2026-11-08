@@ -75,6 +75,7 @@ class _TrainerDialogState extends State<TrainerDialog> {
       trainerPath: trainerPath,
       coverImagePath: _coverPath,
       steamAppId: appId,
+      lastPrefix: widget.initial?.lastPrefix ?? '',
     ));
   }
 

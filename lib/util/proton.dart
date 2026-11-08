@@ -210,3 +210,18 @@ String? findSteamRoot(String home, {String? override, required bool Function(Str
 /// already set-up prefix (callers ensure the game finished setting it up) and a
 /// Proton build that knows the verb; older builds fall back to `run`.
 String trainerVerb({required String protonScript}) => protonScript.contains('"runinprefix"') ? 'runinprefix' : 'run';
+
+/// Whether any process (game, trainer, wineserver, ...) uses the Proton prefix
+/// at [compatDataPath]. Proton exports STEAM_COMPAT_DATA_PATH to everything it
+/// starts and WINEPREFIX (`<compatdata>/pfx`) to Wine processes.
+bool prefixInUse(Iterable<ProcessInfo> processes, String compatDataPath) {
+  final compat = p.normalize(compatDataPath);
+  final pfx = p.join(compat, 'pfx');
+  for (final proc in processes) {
+    final c = proc.env['STEAM_COMPAT_DATA_PATH'];
+    if (c != null && c.isNotEmpty && p.normalize(c) == compat) return true;
+    final w = proc.env['WINEPREFIX'];
+    if (w != null && w.isNotEmpty && p.normalize(w) == pfx) return true;
+  }
+  return false;
+}

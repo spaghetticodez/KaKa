@@ -143,6 +143,19 @@ void main() {
     });
   });
 
+  group('prefixInUse', () {
+    const compat = '/games/steamapps/compatdata/1245620';
+    test('matches STEAM_COMPAT_DATA_PATH (any spelling) and WINEPREFIX, including KaKa trainers', () {
+      expect(prefixInUse([proc(1, {'STEAM_COMPAT_DATA_PATH': '$compat/'}, ['game.exe'])], compat), isTrue);
+      expect(prefixInUse([proc(2, {'WINEPREFIX': '$compat/pfx'}, ['wineserver'])], compat), isTrue);
+      expect(prefixInUse([proc(3, {'STEAM_COMPAT_DATA_PATH': compat, trainerMarkerEnv: '1'}, ['Trainer.exe'])], compat), isTrue);
+    });
+    test('other prefixes and unrelated processes do not count', () {
+      expect(prefixInUse([proc(4, {'STEAM_COMPAT_DATA_PATH': '${compat}0'}, ['x']), proc(5, {'WINEPREFIX': compat}, ['y']), proc(6, {}, ['z'])], compat),
+          isFalse);
+    });
+  });
+
   group('readProcesses', () {
     late Directory root;
 

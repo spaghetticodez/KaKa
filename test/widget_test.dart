@@ -125,6 +125,29 @@ void main() {
     expect(launcher.logDir.existsSync(), isTrue);
   });
 
+  testWidgets('reset trainer data: only offered after a launch, lists the paths, then cleans', (tester) async {
+    final compat = p.join(tmp.path, 'compatdata', '7');
+    final fling = Directory(p.join(compat, 'pfx', 'drive_c', 'users', 'steamuser', 'AppData', 'Local', 'FLiNGTrainer'))..createSync(recursive: true);
+    storage.library = [trainer('a', path: exe, lastPrefix: compat), trainer('b', path: exe)];
+    controller = LibraryController(storage: storage, launcher: launcher, processes: () => []);
+    await pumpApp(tester);
+
+    await hoverCard(tester, 'b');
+    expect(find.byTooltip(l10n.resetTrainerData), findsNothing, reason: 'never launched: no known prefix');
+
+    await hoverCard(tester, 'a');
+    await tester.tap(find.byTooltip(l10n.resetTrainerData));
+    await tester.pumpAndSettle();
+    expect(find.textContaining(fling.path), findsOneWidget);
+    expect(fling.existsSync(), isTrue, reason: 'nothing happens before confirming');
+
+    await tester.tap(find.widgetWithText(TextButton, l10n.reset));
+    await tester.pumpAndSettle();
+    expect(fling.existsSync(), isFalse);
+    expect(find.text(l10n.resetTrainerDataDone(1)), findsOneWidget);
+    await drainSnackBar(tester);
+  });
+
   testWidgets('remove asks first; cancel keeps the trainer', (tester) async {
     await pumpApp(tester);
     await hoverCard(tester, 'a');

@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kaka/l10n/app_localizations.dart';
 import 'package:kaka/state/library_controller.dart';
 import 'package:kaka/util/game_launcher.dart';
+import 'package:kaka/util/proton.dart';
 import 'package:kaka/util/storage.dart';
+import 'package:kaka/util/trainer_data.dart';
 import 'package:path/path.dart' as p;
 
 import 'fakes.dart';
@@ -56,6 +58,37 @@ void main() {
     expect(await controller.launch(controller.trainers.last, l10n), isNull);
     expect(launcher.launched, ['b']);
     expect(storage.library.map((e) => e.id), ['b', 'a']);
+  });
+
+  test('a successful launch records the prefix; a failed one keeps the old value', () async {
+    await controller.launch(controller.trainers.first, l10n);
+    expect(storage.library.first.lastPrefix, '/compat/1245620');
+
+    launcher
+      ..prefix = '/compat/other'
+      ..failure = LaunchException('no');
+    await controller.launch(controller.trainers.first, l10n);
+    expect(storage.library.first.lastPrefix, '/compat/1245620');
+  });
+
+  test('resetTrainerData refuses while something runs in the prefix, then cleans it', () {
+    final tmp = Directory.systemTemp.createTempSync('kaka_ctl_reset_');
+    addTearDown(() => tmp.deleteSync(recursive: true));
+    final compat = p.join(tmp.path, 'compatdata', '7');
+    final fling = Directory(p.join(compat, 'pfx', 'drive_c', 'users', 'steamuser', 'AppData', 'Local', 'FLiNGTrainer'))..createSync(recursive: true);
+    var running = <ProcessInfo>[
+      ProcessInfo(1, {'STEAM_COMPAT_DATA_PATH': compat}, ['game.exe']),
+    ];
+    final c = LibraryController(storage: MemoryStorage(), launcher: FakeLauncher(), processes: () => running);
+    final entry = trainer('x', lastPrefix: compat);
+
+    expect(() => c.resetTrainerData(entry), throwsA(isA<CleanupRefused>()));
+    expect(fling.existsSync(), isTrue);
+
+    running = [];
+    expect(c.resetTrainerData(entry), 1);
+    expect(fling.existsSync(), isFalse);
+    expect(c.resetTrainerData(trainer('never-launched')), 0);
   });
 
   test('launch returns the LaunchException, with its log path', () async {

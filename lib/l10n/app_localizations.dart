@@ -344,6 +344,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open folder'**
   String get openFolder;
+
+  /// No description provided for @resetTrainerData.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset trainer data'**
+  String get resetTrainerData;
+
+  /// No description provided for @resetTrainerDataConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'For FLiNG trainers that report \"previous trainer instance did not exit properly\".\n\nClose the game and the trainer first. KaKa then deletes the FLiNGTrainer folder and empties the Temp folder of the game prefix:\n\n{paths}\n\nNothing else is changed.'**
+  String resetTrainerDataConfirm(Object paths);
+
+  /// No description provided for @resetTrainerDataDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Trainer data reset ({count} items removed)'**
+  String resetTrainerDataDone(Object count);
+
+  /// No description provided for @prefixInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'The game or a trainer is still running in this prefix. Close them first, then try again.'**
+  String get prefixInUse;
+
+  /// No description provided for @cleanupOutsidePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Not reset: the AppData folder of this prefix points outside the prefix.'**
+  String get cleanupOutsidePrefix;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

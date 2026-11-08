@@ -39,19 +39,23 @@ class FakeLauncher extends TrainerLauncher {
 
   /// Thrown by the next [launch] calls when set.
   Object? failure;
+
+  /// Prefix reported for successful launches.
+  String prefix = '/compat/1245620';
   final List<String> launched = [];
   int stopAllCalls = 0;
 
   @override
-  Future<void> launch(TrainerEntry entry, AppLocalizations l10n) async {
+  Future<LaunchPlan> launch(TrainerEntry entry, AppLocalizations l10n) async {
     launched.add(entry.id);
     final error = failure;
     if (error != null) throw error;
+    return LaunchPlan(protonScript: '/proton/proton', compatDataPath: prefix, clientInstallPath: '/steam', verb: 'runinprefix');
   }
 
   @override
   Future<void> stopAll() async => stopAllCalls++;
 }
 
-TrainerEntry trainer(String id, {String? path, int? appId}) =>
-    TrainerEntry(id: id, name: 'Game $id', trainerPath: path ?? '/t/$id.exe', steamAppId: appId);
+TrainerEntry trainer(String id, {String? path, int? appId, String lastPrefix = ''}) =>
+    TrainerEntry(id: id, name: 'Game $id', trainerPath: path ?? '/t/$id.exe', steamAppId: appId, lastPrefix: lastPrefix);

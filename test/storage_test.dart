@@ -9,7 +9,8 @@ import 'package:path/path.dart' as p;
 void main() {
   group('TrainerEntry', () {
     test('survives a JSON round trip', () {
-      final entry = TrainerEntry(id: 'abc', name: 'Test Game', trainerPath: '/t/trainer.exe', coverImagePath: '/t/cover.png', steamAppId: 1245620);
+      final entry = TrainerEntry(
+          id: 'abc', name: 'Test Game', trainerPath: '/t/trainer.exe', coverImagePath: '/t/cover.png', steamAppId: 1245620, lastPrefix: '/c/1245620');
       final restored = TrainerEntry.fromJson(jsonDecode(jsonEncode(entry.toJson())) as Map<String, dynamic>)!;
       expect(restored.toJson(), entry.toJson());
     });

@@ -146,4 +146,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get openFolder => 'Open folder';
+
+  @override
+  String get resetTrainerData => 'Reset trainer data';
+
+  @override
+  String resetTrainerDataConfirm(Object paths) {
+    return 'For FLiNG trainers that report \"previous trainer instance did not exit properly\".\n\nClose the game and the trainer first. KaKa then deletes the FLiNGTrainer folder and empties the Temp folder of the game prefix:\n\n$paths\n\nNothing else is changed.';
+  }
+
+  @override
+  String resetTrainerDataDone(Object count) {
+    return 'Trainer data reset ($count items removed)';
+  }
+
+  @override
+  String get prefixInUse => 'The game or a trainer is still running in this prefix. Close them first, then try again.';
+
+  @override
+  String get cleanupOutsidePrefix => 'Not reset: the AppData folder of this prefix points outside the prefix.';
 }

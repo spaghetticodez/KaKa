@@ -11,7 +11,12 @@ class TrainerEntry {
   /// Proton games are running; the game itself must already run.
   int? steamAppId;
 
-  TrainerEntry({required this.id, required this.name, required this.trainerPath, this.coverImagePath = '', this.steamAppId});
+  /// Proton prefix (`.../compatdata/<id>`) of the last successful launch, so
+  /// trainer data can be reset there while the game is not running. Empty if
+  /// the trainer was never launched.
+  String lastPrefix;
+
+  TrainerEntry({required this.id, required this.name, required this.trainerPath, this.coverImagePath = '', this.steamAppId, this.lastPrefix = ''});
 
   static String newId() {
     final random = Random.secure();
@@ -27,6 +32,7 @@ class TrainerEntry {
     final id = json['id'];
     final cover = json['cover_image_path'];
     final appId = json['steam_app_id'];
+    final lastPrefix = json['last_prefix'];
     return TrainerEntry(
       // Legacy LaLa custom games have a random numeric app_id instead of an id.
       id: id is String && id.isNotEmpty ? id : 'lala-${json['app_id'] ?? newId()}',
@@ -34,6 +40,7 @@ class TrainerEntry {
       trainerPath: trainerPath,
       coverImagePath: cover is String ? cover : '',
       steamAppId: appId is int && appId > 0 ? appId : null,
+      lastPrefix: lastPrefix is String ? lastPrefix : '',
     );
   }
 
@@ -43,5 +50,6 @@ class TrainerEntry {
         'trainer_path': trainerPath,
         'cover_image_path': coverImagePath,
         'steam_app_id': steamAppId,
+        'last_prefix': lastPrefix,
       };
 }

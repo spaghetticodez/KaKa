@@ -72,9 +72,13 @@ class TrainerLauncher {
   /// stop exactly those processes on exit.
   final Set<String> _startedExes = {};
 
-  /// Resolves the plan and starts the trainer. Throws [LaunchException] with a
-  /// user-facing message on failure.
-  Future<void> launch(TrainerEntry entry, AppLocalizations l10n) => start(entry, resolvePlan(entry, l10n), l10n);
+  /// Resolves the plan and starts the trainer; returns the plan that was used.
+  /// Throws [LaunchException] with a user-facing message on failure.
+  Future<LaunchPlan> launch(TrainerEntry entry, AppLocalizations l10n) async {
+    final plan = resolvePlan(entry, l10n);
+    await start(entry, plan, l10n);
+    return plan;
+  }
 
   /// Works out which prefix and Proton build to use. Throws [LaunchException]
   /// with a user-facing message when that is impossible.

@@ -7,7 +7,9 @@ import '../l10n/app_localizations.dart';
 import '../util/dto.dart';
 import '../util/game_launcher.dart';
 import '../util/language.dart';
+import '../util/proton.dart';
 import '../util/storage.dart';
+import '../util/trainer_data.dart';
 
 /// Opens a local file or folder in the desktop's default application.
 typedef UriOpener = Future<bool> Function(Uri uri);
@@ -15,11 +17,14 @@ typedef UriOpener = Future<bool> Function(Uri uri);
 /// App state: the trainer library and settings. UI-free, so it is unit-testable;
 /// widgets listen to it and call its methods.
 class LibraryController extends ChangeNotifier {
-  LibraryController({required this.storage, required this.launcher, UriOpener? openUri}) : _openUri = openUri ?? launchUrl;
+  LibraryController({required this.storage, required this.launcher, UriOpener? openUri, List<ProcessInfo> Function()? processes})
+      : _openUri = openUri ?? launchUrl,
+        _readProcesses = processes ?? readProcesses;
 
   final LocalStorage storage;
   final TrainerLauncher launcher;
   final UriOpener _openUri;
+  final List<ProcessInfo> Function() _readProcesses;
 
   List<TrainerEntry> _trainers = [];
   bool _loading = true;
@@ -86,7 +91,12 @@ class LibraryController extends ChangeNotifier {
     notifyListeners();
     await _saveLibrary();
     try {
-      await launcher.launch(entry, l10n);
+      final plan = await launcher.launch(entry, l10n);
+      if (entry.lastPrefix != plan.compatDataPath) {
+        entry.lastPrefix = plan.compatDataPath;
+        notifyListeners();
+        await _saveLibrary();
+      }
       return null;
     } on LaunchException catch (e) {
       return e;
@@ -94,6 +104,15 @@ class LibraryController extends ChangeNotifier {
       debugPrint('Launch failed: $e');
       return LaunchException(e.toString());
     }
+  }
+
+  /// Resets FLiNG trainer state in the prefix [entry] last ran in, see
+  /// [TrainerDataCleanup]. Returns the number of removed items. Throws
+  /// [CleanupRefused] while anything still runs in that prefix.
+  int resetTrainerData(TrainerEntry entry) {
+    final prefix = entry.lastPrefix;
+    if (prefix.isEmpty) return 0;
+    return TrainerDataCleanup(prefix).run(inUse: prefixInUse(_readProcesses(), prefix));
   }
 
   /// Folder with the per-launch trainer logs.

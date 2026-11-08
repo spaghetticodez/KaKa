@@ -68,9 +68,13 @@ are imported once. LaLa online-catalogue entries are skipped. The LaLa files are
   Debian, Flatpak and Snap Steam locations automatically.
 - **Some trainers will not start** — often a .NET issue in the prefix, see [reinstalling dotnet40](docs/reinstall_dotnet40.md).
 - **Trainer window flickers** — Wayland issue; use X11 or [enable a Wine virtual desktop](docs/enable_virtual_desktop.md).
-- **"Previous instance did not exit properly"** (FLiNG trainers) — delete the trainer's temp folders in the
-  prefix: `pfx/drive_c/users/steamuser/AppData/Local/Temp/` and `.../AppData/Local/FLiNGTrainer/`.
-- Anything else: check the newest log in `~/.local/state/kaka/logs/`.
+- **"Previous instance did not exit properly"** (FLiNG trainers) — close the game and the trainer, hover the
+  trainer's card and click **Reset trainer data** (shown once the trainer has run). KaKa deletes
+  `AppData/Local/FLiNGTrainer/` and empties `AppData/Local/Temp/` in the prefix the trainer last ran in,
+  after showing the exact paths, and refuses while anything still runs in that prefix.
+  Do not delete Proton's `pfx.lock` for this; it is a lock, not a stale marker.
+- Anything else: open the log from the error dialog, or the log folder from Settings
+  (`~/.local/state/kaka/logs/`).
 
 ## Safety
 

@@ -6,12 +6,15 @@ import '../l10n/app_localizations.dart';
 import '../util/dto.dart';
 
 class LibraryPage extends StatefulWidget {
-  const LibraryPage({super.key, required this.trainers, required this.onLaunch, required this.onEdit, required this.onRemove});
+  const LibraryPage({super.key, required this.trainers, required this.onLaunch, required this.onEdit, required this.onRemove, required this.onReset});
 
   final List<TrainerEntry> trainers;
   final Future<void> Function(TrainerEntry entry) onLaunch;
   final void Function(TrainerEntry entry) onEdit;
   final void Function(TrainerEntry entry) onRemove;
+
+  /// Resets FLiNG trainer data; offered once the trainer ran in a known prefix.
+  final void Function(TrainerEntry entry) onReset;
 
   @override
   State<LibraryPage> createState() => _LibraryPageState();
@@ -73,6 +76,8 @@ class _LibraryPageState extends State<LibraryPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          if (entry.lastPrefix.isNotEmpty)
+                            _iconButton(Icons.cleaning_services_outlined, l10n.resetTrainerData, () => widget.onReset(entry)),
                           _iconButton(Icons.edit_outlined, l10n.edit, () => widget.onEdit(entry)),
                           _iconButton(Icons.cancel_outlined, l10n.remove, () => widget.onRemove(entry)),
                         ],

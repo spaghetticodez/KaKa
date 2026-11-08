@@ -11,6 +11,7 @@ import 'util/dto.dart';
 import 'util/game_launcher.dart';
 import 'util/language.dart';
 import 'util/storage.dart';
+import 'util/trainer_data.dart';
 import 'util/widget.dart';
 import 'widget/custom_setting_dialog.dart';
 import 'widget/launch_error_dialog.dart';
@@ -112,6 +113,33 @@ class HomePage extends StatelessWidget {
     if (confirmed == true) await controller.remove(entry.id);
   }
 
+  Future<void> _resetTrainerData(BuildContext context, TrainerEntry entry) async {
+    final l10n = AppLocalizations.of(context)!;
+    final cleanup = TrainerDataCleanup(entry.lastPrefix);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.resetTrainerData),
+        content: SingleChildScrollView(child: SelectableText(l10n.resetTrainerDataConfirm(cleanup.targets.join('\n')))),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancel)),
+          TextButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l10n.reset)),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    String message;
+    try {
+      message = l10n.resetTrainerDataDone(controller.resetTrainerData(entry));
+    } on CleanupRefused catch (e) {
+      message = e.reason == CleanupRefusal.prefixInUse ? l10n.prefixInUse : l10n.cleanupOutsidePrefix;
+    } on FileSystemException catch (e) {
+      message = e.toString();
+    }
+    showSnakeBar(context: context, message: message, time: 4);
+  }
+
   Future<void> _launch(BuildContext context, TrainerEntry entry) async {
     final l10n = AppLocalizations.of(context)!;
     final error = await controller.launch(entry, l10n);
@@ -168,6 +196,7 @@ class HomePage extends StatelessWidget {
                 onLaunch: (entry) => _launch(context, entry),
                 onEdit: (entry) => _editTrainer(context, entry),
                 onRemove: (entry) => _removeTrainer(context, entry),
+                onReset: (entry) => _resetTrainerData(context, entry),
               ),
       ),
     );

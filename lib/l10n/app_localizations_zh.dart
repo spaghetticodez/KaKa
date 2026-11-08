@@ -145,4 +145,23 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get openFolder => '打开文件夹';
+
+  @override
+  String get resetTrainerData => '重置修改器数据';
+
+  @override
+  String resetTrainerDataConfirm(Object paths) {
+    return '适用于提示 \"previous trainer instance did not exit properly\" 的 FLiNG 修改器。\n\n请先关闭游戏和修改器。KaKa 将删除游戏前缀中的 FLiNGTrainer 文件夹并清空 Temp 文件夹：\n\n$paths\n\n不会改动其他内容。';
+  }
+
+  @override
+  String resetTrainerDataDone(Object count) {
+    return '已重置修改器数据（移除 $count 项）';
+  }
+
+  @override
+  String get prefixInUse => '该前缀中仍有游戏或修改器在运行。请先关闭后重试。';
+
+  @override
+  String get cleanupOutsidePrefix => '未重置：此前缀的 AppData 文件夹指向前缀之外。';
 }

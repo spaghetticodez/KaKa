@@ -15,7 +15,6 @@ import 'widget/trainer_dialog.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await windowManager.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -64,22 +63,32 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with WindowListener {
+class _MyHomePageState extends State<MyHomePage> {
   List<TrainerEntry> trainers = [];
   bool loading = true;
   bool _closing = false;
+  Window? _window;
+  ListenerId? _closeListener;
 
   @override
   void initState() {
     super.initState();
-    windowManager.addListener(this);
-    windowManager.setPreventClose(true);
+    // Every close request (title bar, compositor, Alt+F4) is cancelled and
+    // replaced by KaKa's own shutdown: save, stop trainers, exit.
+    _window = WindowManager.instance.getCurrent();
+    _closeListener = _window?.addListener((event) {
+      if (event is WindowCloseRequestedEvent) {
+        event.request.cancel();
+        _shutdown();
+      }
+    });
     _load();
   }
 
   @override
   void dispose() {
-    windowManager.removeListener(this);
+    final listener = _closeListener;
+    if (listener != null) _window?.removeListener(listener);
     super.dispose();
   }
 
@@ -152,9 +161,8 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     return launchTrainer(context, entry);
   }
 
-  @override
-  void onWindowClose() async {
-    if (_closing || !await windowManager.isPreventClose()) return;
+  Future<void> _shutdown() async {
+    if (_closing) return;
     _closing = true;
     try {
       await _saveConfig();
@@ -163,10 +171,10 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
     } catch (e) {
       debugPrint('Shutdown cleanup failed: $e');
     } finally {
-      // Leave directly instead of windowManager.destroy(): on X11 the Flutter
-      // Linux embedder aborts while disposing its GL framebuffer during window
-      // teardown (no current GL context; upstream LaLa issue #80). Always exit,
-      // so a failed save cannot leave a window that ignores every close.
+      // Leave directly instead of letting the window be destroyed: on X11 the
+      // Flutter Linux embedder aborts while disposing its GL framebuffer during
+      // window teardown (no current GL context; upstream LaLa issue #80). Always
+      // exit, so a failed save cannot leave a window that ignores every close.
       exit(0);
     }
   }
@@ -202,7 +210,7 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
               builder: (BuildContext context) => CustomSettingDialog(updateLanguage: updateLanguage, onConfigChanged: _saveConfig),
             );
           }),
-          _appBarButton(Icons.exit_to_app, MaterialLocalizations.of(context).closeButtonTooltip, onWindowClose),
+          _appBarButton(Icons.exit_to_app, MaterialLocalizations.of(context).closeButtonTooltip, _shutdown),
           const SizedBox(width: 10),
         ],
       ),

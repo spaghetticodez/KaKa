@@ -33,8 +33,8 @@ class _TrainerDialogState extends State<TrainerDialog> {
   }
 
   Future<void> _pickTrainer() async {
-    final result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['exe', 'EXE']);
-    final path = result?.files.single.path;
+    final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['exe', 'EXE']);
+    final path = file?.path;
     if (path == null) return;
     setState(() {
       _trainerPath = path;
@@ -43,8 +43,8 @@ class _TrainerDialogState extends State<TrainerDialog> {
   }
 
   Future<void> _pickCover() async {
-    final result = await FilePicker.pickFiles(type: FileType.image);
-    final path = result?.files.single.path;
+    final file = await FilePicker.pickFile(type: FileType.image);
+    final path = file?.path;
     if (path != null) setState(() => _coverPath = path);
   }
 

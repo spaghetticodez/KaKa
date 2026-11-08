@@ -15,7 +15,7 @@ currently running. Fork of [wyyadd/LaLa](https://github.com/wyyadd/LaLa)
 
 ## Toolchain
 
-- Flutter version is pinned in `.fvmrc` (currently 3.41.7). Dev SDK on the
+- Flutter version is pinned in `.fvmrc` (currently 3.47.9). Dev SDK on the
   maintainer host: `~/.local/share/flutter-sdk/<version>`, symlinked as `flutter`/`dart`.
 - Formatter page width is 150 (`analysis_options.yaml`).
 

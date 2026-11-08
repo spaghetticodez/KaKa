@@ -33,7 +33,7 @@ When KaKa is closed, it stops the trainers it started (only those — the game a
 ## Build
 
 Requires the Flutter version pinned in [`.fvmrc`](.fvmrc) and the usual Linux desktop toolchain
-(`clang cmake ninja pkgconf gtk3`).
+(`clang cmake ninja pkgconf gtk3`, plus X11/Xi headers for `window_manager`'s native core).
 
 ```sh
 flutter pub get

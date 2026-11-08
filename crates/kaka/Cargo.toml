@@ -1,0 +1,17 @@
+[package]
+name = "kaka"
+description = "KaKa: run your own Windows game trainers inside the running game's Proton prefix"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[dependencies]
+kaka-core = { path = "../kaka-core" }
+gtk.workspace = true
+adw.workspace = true
+async-channel.workspace = true
+i18n-embed.workspace = true
+i18n-embed-fl.workspace = true
+rust-embed.workspace = true

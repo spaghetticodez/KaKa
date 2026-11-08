@@ -120,7 +120,7 @@ class HomePage extends StatelessWidget {
       showSnakeBar(context: context, message: l10n.launched(entry.name), time: 2);
     } else {
       // Not awaited: the card must leave its "launching" state while the dialog is open.
-      unawaited(showLaunchError(context, error));
+      unawaited(showLaunchError(context, error, openLog: controller.openLog));
     }
   }
 

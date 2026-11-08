@@ -136,4 +136,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get basedOn => '基于 LaLa';
+
+  @override
+  String get openLog => '打开日志';
+
+  @override
+  String get trainerLogs => '修改器日志';
+
+  @override
+  String get openFolder => '打开文件夹';
 }

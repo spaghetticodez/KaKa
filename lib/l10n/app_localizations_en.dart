@@ -137,4 +137,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get basedOn => 'Based on LaLa';
+
+  @override
+  String get openLog => 'Open log';
+
+  @override
+  String get trainerLogs => 'Trainer logs';
+
+  @override
+  String get openFolder => 'Open folder';
 }

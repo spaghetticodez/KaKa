@@ -37,5 +37,8 @@
   "protonPathNotFound": "未找到该游戏的 Proton 安装。\n\n前缀：{prefix}",
   "trainerExited": "修改器立即退出（退出码 {code}）。\n\n{output}\n\n完整日志：{logPath}",
   "sourceCode": "源代码",
-  "basedOn": "基于 LaLa"
+  "basedOn": "基于 LaLa",
+  "openLog": "打开日志",
+  "trainerLogs": "修改器日志",
+  "openFolder": "打开文件夹"
 }

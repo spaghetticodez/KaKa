@@ -137,4 +137,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get basedOn => 'Basiert auf LaLa';
+
+  @override
+  String get openLog => 'Protokoll öffnen';
+
+  @override
+  String get trainerLogs => 'Trainer-Protokolle';
+
+  @override
+  String get openFolder => 'Ordner öffnen';
 }

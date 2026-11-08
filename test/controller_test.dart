@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kaka/l10n/app_localizations.dart';
 import 'package:kaka/state/library_controller.dart';
 import 'package:kaka/util/game_launcher.dart';
 import 'package:kaka/util/storage.dart';
+import 'package:path/path.dart' as p;
 
 import 'fakes.dart';
 
@@ -55,14 +58,40 @@ void main() {
     expect(storage.library.map((e) => e.id), ['b', 'a']);
   });
 
-  test('launch returns the user-facing message of a LaunchException', () async {
-    launcher.failure = LaunchException(l10n.gameNotRunning);
-    expect(await controller.launch(controller.trainers.first, l10n), l10n.gameNotRunning);
+  test('launch returns the LaunchException, with its log path', () async {
+    launcher.failure = LaunchException(l10n.gameNotRunning, logPath: '/logs/x.log');
+    final error = await controller.launch(controller.trainers.first, l10n);
+    expect(error?.message, l10n.gameNotRunning);
+    expect(error?.logPath, '/logs/x.log');
   });
 
   test('launch also reports unexpected errors instead of throwing', () async {
     launcher.failure = StateError('boom');
-    expect(await controller.launch(controller.trainers.first, l10n), contains('boom'));
+    expect((await controller.launch(controller.trainers.first, l10n))?.message, contains('boom'));
+  });
+
+  test('logs open as local file URIs; the folder is created first; opener errors are swallowed', () async {
+    final tmp = Directory.systemTemp.createTempSync('kaka_ctl_');
+    addTearDown(() => tmp.deleteSync(recursive: true));
+    final opened = <Uri>[];
+    final logDir = Directory(p.join(tmp.path, 'state', 'kaka', 'logs'));
+    final c = LibraryController(
+        storage: MemoryStorage(),
+        launcher: FakeLauncher(logDir: logDir),
+        openUri: (uri) async {
+          opened.add(uri);
+          return true;
+        });
+
+    expect(await c.openLogFolder(), isTrue);
+    expect(logDir.existsSync(), isTrue);
+    expect(await c.openLog('/logs/a b.log'), isTrue);
+    expect(opened, [Uri.directory(logDir.path), Uri.file('/logs/a b.log')]);
+    expect(opened.every((u) => u.scheme == 'file'), isTrue);
+
+    final failing =
+        LibraryController(storage: MemoryStorage(), launcher: FakeLauncher(logDir: logDir), openUri: (_) => throw StateError('no handler'));
+    expect(await failing.openLog('/x.log'), isFalse);
   });
 
   test('settings are saved; unknown languages are rejected', () async {

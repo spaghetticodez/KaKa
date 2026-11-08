@@ -326,6 +326,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Based on LaLa'**
   String get basedOn;
+
+  /// No description provided for @openLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Open log'**
+  String get openLog;
+
+  /// No description provided for @trainerLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Trainer logs'**
+  String get trainerLogs;
+
+  /// No description provided for @openFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Open folder'**
+  String get openFolder;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

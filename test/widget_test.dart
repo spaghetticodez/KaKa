@@ -8,6 +8,7 @@ import 'package:kaka/main.dart';
 import 'package:kaka/state/library_controller.dart';
 import 'package:kaka/util/game_launcher.dart';
 import 'package:kaka/util/storage.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 
 import 'fakes.dart';
@@ -19,13 +20,22 @@ void main() {
   late MemoryStorage storage;
   late FakeLauncher launcher;
   late LibraryController controller;
+  late List<Uri> opened;
 
   setUp(() {
     tmp = Directory.systemTemp.createTempSync('kaka_widget_');
     exe = (File(p.join(tmp.path, 'Trainer.exe'))..writeAsStringSync('MZ')).path;
     storage = MemoryStorage(library: [trainer('a', path: exe), trainer('b', path: exe)]);
-    launcher = FakeLauncher();
-    controller = LibraryController(storage: storage, launcher: launcher);
+    launcher = FakeLauncher(logDir: Directory(p.join(tmp.path, 'logs')));
+    opened = [];
+    controller = LibraryController(
+      storage: storage,
+      launcher: launcher,
+      openUri: (uri) async {
+        opened.add(uri);
+        return true;
+      },
+    );
   });
 
   tearDown(() => tmp.deleteSync(recursive: true));
@@ -88,6 +98,31 @@ void main() {
     await tester.tap(find.text(l10n.ok));
     await tester.pumpAndSettle();
     expect(find.text(l10n.launchFail), findsNothing);
+    expect(find.text(l10n.openLog), findsNothing, reason: 'no log was written for this failure');
+  });
+
+  testWidgets('a trainer that crashed offers to open its launch log', (tester) async {
+    launcher.failure = LaunchException('exited with code 3', logPath: '/logs/crash.log');
+    await pumpApp(tester);
+    await tester.tap(find.byKey(const ValueKey('trainer-card-a')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.openLog));
+    await tester.pump();
+    expect(opened, [Uri.file('/logs/crash.log')]);
+  });
+
+  testWidgets('settings show the log folder and open it', (tester) async {
+    PackageInfo.setMockInitialValues(appName: 'kaka', packageName: 'kaka', version: '1.2.3', buildNumber: '1', buildSignature: '');
+    await pumpApp(tester);
+    await tester.tap(find.byTooltip(l10n.setting));
+    await tester.pumpAndSettle();
+    expect(find.text(launcher.logDir.path), findsOneWidget);
+    expect(find.text('KaKa v1.2.3'), findsOneWidget);
+
+    await tester.tap(find.text(l10n.openFolder));
+    await tester.pump();
+    expect(opened, [Uri.directory(launcher.logDir.path)]);
+    expect(launcher.logDir.existsSync(), isTrue);
   });
 
   testWidgets('remove asks first; cancel keeps the trainer', (tester) async {

@@ -37,5 +37,8 @@
   "protonPathNotFound": "Proton-Installation für dieses Spiel nicht gefunden.\n\nPräfix: {prefix}",
   "trainerExited": "Der Trainer wurde sofort beendet (Exit-Code {code}).\n\n{output}\n\nVollständiges Protokoll: {logPath}",
   "sourceCode": "Quellcode",
-  "basedOn": "Basiert auf LaLa"
+  "basedOn": "Basiert auf LaLa",
+  "openLog": "Protokoll öffnen",
+  "trainerLogs": "Trainer-Protokolle",
+  "openFolder": "Ordner öffnen"
 }

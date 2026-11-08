@@ -121,14 +121,39 @@ class _CustomSettingDialogState extends State<CustomSettingDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
+              const Divider(height: 24),
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.trainerLogs, style: const TextStyle(fontSize: 18)),
+                        const SizedBox(height: 4),
+                        Tooltip(
+                          message: widget.controller.logDir,
+                          child: Text(widget.controller.logDir,
+                              style: const TextStyle(color: Colors.grey, fontSize: 13), overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00D3C4)),
+                    onPressed: widget.controller.openLogFolder,
+                    child: Text(l10n.openFolder),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+              // Wrap, not Row: long translations or large fonts must not overflow.
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 12,
+                runSpacing: 6,
                 children: [
                   Text('KaKa $appVersion', style: const TextStyle(color: Colors.grey)),
-                  const SizedBox(width: 12),
                   _link(l10n.sourceCode, _sourceUrl),
-                  const SizedBox(width: 12),
                   _link(l10n.basedOn, _upstreamUrl),
                 ],
               ),

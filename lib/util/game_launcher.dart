@@ -14,7 +14,10 @@ const int _keptLogs = 20;
 class LaunchException implements Exception {
   final String message;
 
-  LaunchException(this.message);
+  /// The trainer's launch log, when one was written.
+  final String? logPath;
+
+  LaunchException(this.message, {this.logPath});
 
   @override
   String toString() => message;
@@ -171,7 +174,7 @@ class TrainerLauncher {
     if (code != null && code != 0) {
       final lines = (await logFile.readAsLines()).where((l) => !l.startsWith('# ')).toList();
       final tail = lines.skip(lines.length > 15 ? lines.length - 15 : 0).join('\n');
-      throw LaunchException(l10n.trainerExited(code, tail, logFile.path));
+      throw LaunchException(l10n.trainerExited(code, tail, logFile.path), logPath: logFile.path);
     }
   }
 

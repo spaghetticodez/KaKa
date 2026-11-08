@@ -35,7 +35,7 @@ class MemoryStorage extends LocalStorage {
 }
 
 class FakeLauncher extends TrainerLauncher {
-  FakeLauncher() : super(logDir: Directory.systemTemp);
+  FakeLauncher({Directory? logDir}) : super(logDir: logDir ?? Directory.systemTemp);
 
   /// Thrown by the next [launch] calls when set.
   Object? failure;

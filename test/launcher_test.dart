@@ -125,7 +125,9 @@ void main() {
     final e = entry('Crash.exe');
     await expectLater(
       launcher.launch(e, l10n),
-      throwsA(isA<LaunchException>().having((x) => x.message, 'message', allOf(contains('exit code 3'), contains('err: boom')))),
+      throwsA(isA<LaunchException>()
+          .having((x) => x.message, 'message', allOf(contains('exit code 3'), contains('err: boom')))
+          .having((x) => x.logPath != null && File(x.logPath!).existsSync(), 'log file exists', isTrue)),
     );
   });
 

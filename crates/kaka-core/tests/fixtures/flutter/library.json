@@ -1,0 +1,26 @@
+[
+  {
+    "id": "a1b2c3d4e5f60718",
+    "name": "ELDEN RING \"Deluxe\" ® – 艾尔登法环",
+    "trainer_path": "/home/u/Trainers/Elden Ring Trainer.exe",
+    "cover_image_path": "/home/u/.local/share/Steam/appcache/librarycache/1245620/abc/library_600x900.jpg",
+    "steam_app_id": 1245620,
+    "last_prefix": "/mnt/games/SteamLibrary/steamapps/compatdata/1245620"
+  },
+  {
+    "id": "lala-1999999999",
+    "name": "Back\\slash and tab\tand newline",
+    "trainer_path": "/t/old.exe",
+    "cover_image_path": "",
+    "steam_app_id": null,
+    "last_prefix": ""
+  },
+  {
+    "id": "f00dfeedc0ffee00",
+    "name": "Shortcut",
+    "trainer_path": "/t/s.exe",
+    "cover_image_path": "",
+    "steam_app_id": 3123456789,
+    "last_prefix": ""
+  }
+]

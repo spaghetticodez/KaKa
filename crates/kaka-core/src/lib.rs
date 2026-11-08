@@ -4,3 +4,6 @@
 //! prefix of the game that is already running. Nothing here downloads or
 //! auto-launches anything, and processes are always started with argument
 //! lists, never through a shell.
+
+pub mod model;
+pub mod storage;

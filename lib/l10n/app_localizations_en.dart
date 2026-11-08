@@ -12,137 +12,136 @@ class AppLocalizationsEn extends AppLocalizations {
   String get title => 'KaKa Trainer Launcher';
 
   @override
-  String get library => 'Library';
-
-  @override
-  String get game => 'Game';
-
-  @override
-  String get specialNotes => 'Special Notes';
-
-  @override
   String get launch => 'Launch';
 
   @override
-  String get notFound => 'Oops, no results found. Try different keywords!';
+  String get libraryEmpty => 'No trainers yet.\nClick + to add a trainer (.exe) for one of your games.';
 
   @override
-  String get libraryEmpty => 'The game library is empty.\nSearch and add your favorites!';
+  String get addTrainer => 'Add Trainer';
 
   @override
-  String get addTrainers => 'Add Trainers';
+  String get editTrainer => 'Edit Trainer';
 
   @override
-  String get gameName => 'Game Name:';
+  String get edit => 'Edit';
 
   @override
-  String get trainerPath => 'Trainer Path:';
+  String get gameName => 'Game name';
+
+  @override
+  String get trainerFile => 'Trainer (.exe)';
+
+  @override
+  String get gameCover => 'Cover image (optional)';
+
+  @override
+  String get steamAppId => 'Steam AppID (optional)';
+
+  @override
+  String get steamAppIdHelp => 'Only needed when several games run at once, or to start the trainer before the game.';
 
   @override
   String get select => 'Select';
 
   @override
-  String get gameCover => 'Game Cover:\n(Optional)';
-
-  @override
-  String get trainerAdded => 'Trainer added successfully';
+  String get change => 'Change';
 
   @override
   String get save => 'Save';
 
   @override
-  String get search => 'Search';
+  String get cancel => 'Cancel';
 
   @override
-  String get setting => 'Setting';
+  String get remove => 'Remove';
+
+  @override
+  String removeTrainerConfirm(Object name) {
+    return 'Remove \"$name\" from the library?\n\nThe trainer file itself is not deleted.';
+  }
+
+  @override
+  String get trainerAdded => 'Trainer added';
+
+  @override
+  String get trainerUpdated => 'Trainer updated';
+
+  @override
+  String get requiredFields => 'Game name and trainer file are required.';
+
+  @override
+  String get invalidAppId => 'Steam AppID must be a positive number.';
+
+  @override
+  String get setting => 'Settings';
 
   @override
   String get language => 'Language';
 
   @override
-  String get clearCache => 'Clear Cache';
+  String get steamPath => 'Steam path';
 
   @override
-  String get clear => 'Clear';
-
-  @override
-  String get cacheCleared => 'Cache cleared successfully';
-
-  @override
-  String get setSteamPath => 'Set Steam Path';
+  String get steamPathAuto => 'Auto-detect';
 
   @override
   String get set => 'Set';
 
   @override
-  String get steamPathSet => 'Steam path set successfully';
+  String get reset => 'Reset';
 
   @override
-  String get checkUpdate => 'Check Update';
-
-  @override
-  String get check => 'Check';
-
-  @override
-  String get supportMe => 'Support me';
+  String get steamPathSet => 'Steam path set';
 
   @override
   String get ok => 'OK';
 
   @override
-  String newVersion(Object latestVersion) {
-    return '🔥 New Version $latestVersion available!';
-  }
+  String get launchFail => 'Launch failed';
 
   @override
-  String get upToDate => '🎉 Already up to date';
-
-  @override
-  String get downloadLink => 'Download Link:';
-
-  @override
-  String protonPathNotFound(Object protonPath) {
-    return 'Proton path not found.\n\nPlease ensure Proton is installed and the game uses Proton.\n\nCurrent Path: $protonPath';
+  String launched(Object name) {
+    return 'Trainer started: $name';
   }
 
   @override
   String trainerPathNotFound(Object trainerPath) {
-    return 'Trainer path not found.\n\nCurrent Path: $trainerPath';
+    return 'Trainer file not found.\n\nPath: $trainerPath';
   }
 
   @override
-  String steamPathNotFound(Object defaultPath, Object steamPath) {
-    return 'steamapps folder under Steam path not found.\n\nYou can specify the path in the settings.\n\nCurrent Path: $steamPath\n\nDefault Path: $defaultPath';
+  String get gameNotRunning =>
+      'No running Proton game found.\n\nStart the game first (Steam, Heroic, Lutris or another Proton launcher), then launch the trainer.\n\nTo start the trainer before the game, set the Steam AppID on this trainer.';
+
+  @override
+  String multipleGamesRunning(Object games) {
+    return 'Several Proton games are running:\n\n$games\n\nSet the Steam AppID on this trainer to choose one.';
   }
 
   @override
-  String gamePathNotFound(Object gamePath) {
-    return 'Game path not found. Please ensure the game is installed.\n\nFor non-Steam games or custom trainers, make sure the game is running.\n\nCurrent Path: $gamePath';
+  String prefixNotFound(Object appId) {
+    return 'Proton prefix for Steam AppID $appId not found.\n\nMake sure the game is installed and has been started with Proton at least once.';
   }
 
   @override
-  String get customTrainerGamePathNotFound => 'Game not found. \n\nFor non-Steam games or custom trainers, make sure the game is running.';
-
-  @override
-  String get launchFail => 'Launch failed';
-
-  @override
-  String get loadGames => 'Load Games';
-
-  @override
-  String get load => 'load';
-
-  @override
-  String get gameLoaded => 'Games loaded successfully';
-
-  @override
-  String libraryPathNotFound(Object libraryPath) {
-    return 'Library path not found.\n\nCurrent Path: $libraryPath';
+  String protonPathNotFound(Object prefix) {
+    return 'Proton installation for this game not found.\n\nPrefix: $prefix';
   }
 
   @override
-  String get setGameSteamPath => 'Set Steam Path for Game';
+  String steamPathNotFound(Object paths) {
+    return 'Steam installation not found. Set the Steam path in Settings.\n\nChecked:\n$paths';
+  }
 
   @override
-  String get gameSteamPathSet => 'Steam path set successfully for this game';
+  String trainerExited(Object code, Object logPath, Object output) {
+    return 'The trainer exited right away (exit code $code).\n\n$output\n\nFull log: $logPath';
+  }
+
+  @override
+  String get sourceCode => 'Source';
+
+  @override
+  String get basedOn => 'Based on LaLa';
 }

@@ -12,46 +12,66 @@ class AppLocalizationsZh extends AppLocalizations {
   String get title => 'KaKa 启动器';
 
   @override
-  String get library => '库';
-
-  @override
-  String get game => '游戏';
-
-  @override
-  String get specialNotes => '特别提醒';
-
-  @override
   String get launch => '启动';
 
   @override
-  String get notFound => '抱歉，没有找到相关结果。试试其他关键词吧！';
+  String get libraryEmpty => '还没有修改器。\n点击 + 为你的游戏添加修改器 (.exe)。';
 
   @override
-  String get libraryEmpty => '游戏库为空，\n搜索并添加您喜欢的游戏吧！';
+  String get addTrainer => '添加修改器';
 
   @override
-  String get addTrainers => '添加修改器';
+  String get editTrainer => '编辑修改器';
 
   @override
-  String get gameName => '游戏名称:';
+  String get edit => '编辑';
 
   @override
-  String get trainerPath => '修改器路径:';
+  String get gameName => '游戏名称';
+
+  @override
+  String get trainerFile => '修改器 (.exe)';
+
+  @override
+  String get gameCover => '封面图片（可选）';
+
+  @override
+  String get steamAppId => 'Steam AppID（可选）';
+
+  @override
+  String get steamAppIdHelp => '仅在同时运行多个游戏，或需要在游戏之前启动修改器时需要。';
 
   @override
   String get select => '选择';
 
   @override
-  String get gameCover => '游戏封面:\n(可选)';
-
-  @override
-  String get trainerAdded => '修改器添加成功';
+  String get change => '更改';
 
   @override
   String get save => '保存';
 
   @override
-  String get search => '搜索';
+  String get cancel => '取消';
+
+  @override
+  String get remove => '移除';
+
+  @override
+  String removeTrainerConfirm(Object name) {
+    return '从库中移除 \"$name\"？\n\n修改器文件本身不会被删除。';
+  }
+
+  @override
+  String get trainerAdded => '修改器已添加';
+
+  @override
+  String get trainerUpdated => '修改器已更新';
+
+  @override
+  String get requiredFields => '游戏名称和修改器文件为必填项。';
+
+  @override
+  String get invalidAppId => 'Steam AppID 必须是正整数。';
 
   @override
   String get setting => '设置';
@@ -60,89 +80,67 @@ class AppLocalizationsZh extends AppLocalizations {
   String get language => '语言';
 
   @override
-  String get clearCache => '清理缓存';
+  String get steamPath => 'Steam 路径';
 
   @override
-  String get clear => '清理';
-
-  @override
-  String get cacheCleared => '清理完成';
-
-  @override
-  String get setSteamPath => '设置Steam路径';
+  String get steamPathAuto => '自动检测';
 
   @override
   String get set => '设置';
 
   @override
-  String get steamPathSet => 'Steam路径设置成功';
+  String get reset => '重置';
 
   @override
-  String get checkUpdate => '检查更新';
-
-  @override
-  String get check => '检查';
-
-  @override
-  String get supportMe => '支持我';
+  String get steamPathSet => 'Steam 路径设置成功';
 
   @override
   String get ok => '确定';
 
   @override
-  String newVersion(Object latestVersion) {
-    return '🔥 新版本 $latestVersion 可更新！';
-  }
+  String get launchFail => '启动失败';
 
   @override
-  String get upToDate => '🎉 已是最新版本';
-
-  @override
-  String get downloadLink => '下载地址:';
-
-  @override
-  String protonPathNotFound(Object protonPath) {
-    return '未找到Proton路径。\n\n请确认已安装Proton并且游戏使用proton。\n\n当前路径为: $protonPath';
+  String launched(Object name) {
+    return '修改器已启动：$name';
   }
 
   @override
   String trainerPathNotFound(Object trainerPath) {
-    return '未找到修改器路径。\n\n当前路径为: $trainerPath';
+    return '未找到修改器文件。\n\n路径：$trainerPath';
   }
 
   @override
-  String steamPathNotFound(Object defaultPath, Object steamPath) {
-    return '未找到Steam路径下的steamapps文件夹。\n\n您可以在设置中指定路径。\n\n当前路径为: $steamPath\n\n默认路径为: $defaultPath';
+  String get gameNotRunning => '未找到正在运行的 Proton 游戏。\n\n请先启动游戏（Steam、Heroic、Lutris 或其他 Proton 启动器），再启动修改器。\n\n如需在游戏之前启动修改器，请为该修改器设置 Steam AppID。';
+
+  @override
+  String multipleGamesRunning(Object games) {
+    return '有多个 Proton 游戏正在运行：\n\n$games\n\n请为该修改器设置 Steam AppID 以选择其中一个。';
   }
 
   @override
-  String gamePathNotFound(Object gamePath) {
-    return '游戏路径未找到。请确保游戏已安装。\n\n对于非Steam游戏或者自定义修改器，请确保游戏已启动。\n\n当前路径为: $gamePath';
+  String prefixNotFound(Object appId) {
+    return '未找到 Steam AppID $appId 的 Proton 前缀。\n\n请确认游戏已安装，并且至少用 Proton 启动过一次。';
   }
 
   @override
-  String get customTrainerGamePathNotFound => '游戏未找到。\n\n对于非Steam游戏或者自定义修改器，请确保游戏已启动。';
-
-  @override
-  String get launchFail => '启动失败';
-
-  @override
-  String get loadGames => '载入游戏';
-
-  @override
-  String get load => '载入';
-
-  @override
-  String get gameLoaded => '游戏载入成功';
-
-  @override
-  String libraryPathNotFound(Object libraryPath) {
-    return '未找到游戏库路径。\n\n当前路径: $libraryPath';
+  String protonPathNotFound(Object prefix) {
+    return '未找到该游戏的 Proton 安装。\n\n前缀：$prefix';
   }
 
   @override
-  String get setGameSteamPath => '设置游戏Steam路径';
+  String steamPathNotFound(Object paths) {
+    return '未找到 Steam 安装。请在设置中指定 Steam 路径。\n\n已检查：\n$paths';
+  }
 
   @override
-  String get gameSteamPathSet => '游戏Steam路径设置成功';
+  String trainerExited(Object code, Object logPath, Object output) {
+    return '修改器立即退出（退出码 $code）。\n\n$output\n\n完整日志：$logPath';
+  }
+
+  @override
+  String get sourceCode => '源代码';
+
+  @override
+  String get basedOn => '基于 LaLa';
 }

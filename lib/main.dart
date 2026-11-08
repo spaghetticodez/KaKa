@@ -2,20 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'l10n/app_localizations.dart';
-import 'page/game.dart';
 import 'page/library.dart';
 import 'util/dto.dart';
 import 'util/game_launcher.dart';
 import 'util/language.dart';
-import 'util/server.dart';
 import 'util/storage.dart';
-import 'widget/custom_add_game.dart';
-import 'widget/custom_search_bar.dart';
+import 'util/widget.dart';
 import 'widget/custom_setting_dialog.dart';
+import 'widget/trainer_dialog.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  localStorage.initCacheManager();
+  await windowManager.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -64,26 +62,16 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with WindowListener, SingleTickerProviderStateMixin {
-  late final TabController tabController;
-  static const int tabLength = 2;
-  bool showBackButton = false;
-  String latestVersion = "";
-
-  LibraryPage libraryPage = LibraryPage(libraryGames: const [], updateBackButton: () {});
-  GamePage gamePage = GamePage(searchedGames: const [], updateLibraryGames: (game, switchTab, showBackButton) {});
-
-  List<Game> libraryGames = [];
-  List<Game> hotListGames = [];
+class _MyHomePageState extends State<MyHomePage> with WindowListener {
+  List<TrainerEntry> trainers = [];
+  bool loading = true;
 
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
-    windowManager.setPreventClose(true).then((value) => setState(() {}));
-    tabController = TabController(length: tabLength, vsync: this);
-    _loadConfig();
-    _loadLocalGames();
+    windowManager.setPreventClose(true);
+    _load();
   }
 
   @override
@@ -92,40 +80,19 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener, SingleTick
     super.dispose();
   }
 
-  void updateSearchGames(String prompt) async {
-    navGameKey.currentState?.popUntil((route) => route.isFirst);
-    tabController.animateTo(1);
-    setState(() {
-      gamePage = GamePage(searchedGames: const [], updateLibraryGames: updateLibraryGames, showCircularIndicator: true);
-    });
-    var games = await server.searchGames(prompt);
-    setState(() {
-      gamePage = GamePage(searchedGames: games, updateLibraryGames: updateLibraryGames);
-      showBackButton = true;
-    });
-  }
-
-  void updateLibraryGames(List<Game> games, bool switchTab, bool showBackButton) {
-    for (var game in games) {
-      final existingGameIndex = libraryGames.indexWhere((existingGame) => existingGame.id == game.id);
-      if (existingGameIndex != -1) {
-        libraryGames.removeAt(existingGameIndex);
-        libraryGames.insert(0, game);
-      } else {
-        libraryGames.insert(0, game);
-      }
+  Future<void> _load() async {
+    final config = await localStorage.readConfig();
+    final language = config.language;
+    if (language != null && language != selectedLanguage && languageOptions.contains(language) && mounted) {
+      updateLanguage(language);
     }
-    // save game library
-    localStorage.writeGameList(libraryGames, libraryFileName);
+    customSteamPath = config.steamPath;
+    final entries = await localStorage.readLibrary();
+    if (!mounted) return;
     setState(() {
-      libraryPage = LibraryPage(libraryGames: libraryGames, updateBackButton: updateBackButton);
+      trainers = entries;
+      loading = false;
     });
-    if (switchTab) {
-      tabController.animateTo(0);
-    }
-    if (showBackButton) {
-      updateBackButton();
-    }
   }
 
   void updateLanguage(String newLanguage) {
@@ -133,155 +100,103 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener, SingleTick
     MyApp.setLocal(context, languageToLocale(selectedLanguage));
   }
 
-  void updateBackButton() {
+  Future<void> _saveLibrary() => localStorage.writeLibrary(trainers);
+
+  Future<void> _saveConfig() => localStorage.writeConfig(language: selectedLanguage, steamPath: customSteamPath);
+
+  Future<void> _addTrainer() async {
+    final entry = await showDialog<TrainerEntry>(context: context, barrierDismissible: false, builder: (_) => const TrainerDialog());
+    if (entry == null || !mounted) return;
+    setState(() => trainers.insert(0, entry));
+    _saveLibrary();
+    showSnakeBar(context: context, message: AppLocalizations.of(context)!.trainerAdded);
+  }
+
+  Future<void> _editTrainer(TrainerEntry entry) async {
+    final updated = await showDialog<TrainerEntry>(context: context, barrierDismissible: false, builder: (_) => TrainerDialog(initial: entry));
+    if (updated == null || !mounted) return;
     setState(() {
-      showBackButton = true;
+      final index = trainers.indexWhere((e) => e.id == entry.id);
+      if (index != -1) trainers[index] = updated;
     });
+    _saveLibrary();
+    showSnakeBar(context: context, message: AppLocalizations.of(context)!.trainerUpdated);
   }
 
-  void _loadConfig() async {
-    Map<String, dynamic>? config = await localStorage.readConfig();
-    if (config != null) {
-      String language = config['language'] ?? languageOptions[0];
-      if (language != selectedLanguage && languageOptions.indexWhere((element) => element == language) != -1) {
-        updateLanguage(language);
-      }
-      customSteamPath = config['custom_steam_path'] ?? "";
-    }
-    configLoaded = true;
-    latestVersion = await server.getLatestVersion();
+  Future<void> _removeTrainer(TrainerEntry entry) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(l10n.removeTrainerConfirm(entry.name)),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancel)),
+          TextButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l10n.remove)),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => trainers.removeWhere((e) => e.id == entry.id));
+    _saveLibrary();
   }
 
-  void _loadLocalGames() async {
-    if (libraryGames.isEmpty) {
-      List<Game> games = await localStorage.readGameList(libraryFileName);
-      setState(() {
-        libraryGames = games;
-        libraryPage = LibraryPage(libraryGames: libraryGames, updateBackButton: updateBackButton);
-      });
-    }
-    gameLoaded = true;
-    if (hotListGames.isEmpty) {
-      List<Game> localHotGames = await localStorage.readGameList(hotListFileName);
-      if (localHotGames.isNotEmpty) {
-        setState(() {
-          hotListGames = localHotGames;
-          gamePage = GamePage(searchedGames: hotListGames, updateLibraryGames: updateLibraryGames);
-        });
-      }
-      List<Game> hotGames = await server.getHotList();
-      if (hotGames.isNotEmpty) {
-        setState(() {
-          hotListGames = hotGames;
-          gamePage = GamePage(searchedGames: hotListGames, updateLibraryGames: updateLibraryGames);
-        });
-        localStorage.writeGameList(hotListGames, hotListFileName);
-      }
-    }
+  Future<void> _launch(TrainerEntry entry) {
+    setState(() {
+      trainers.removeWhere((e) => e.id == entry.id);
+      trainers.insert(0, entry);
+    });
+    _saveLibrary();
+    return launchTrainer(context, entry);
   }
 
   @override
   void onWindowClose() async {
-    bool isPreventClose = await windowManager.isPreventClose();
-    if (isPreventClose) {
-      await localStorage.writeConfig();
-      await localStorage.writeGameList(libraryGames, libraryFileName);
-      await killAllTrainers();
+    if (await windowManager.isPreventClose()) {
+      await _saveConfig();
+      await _saveLibrary();
+      await stopAllTrainers();
       await windowManager.destroy();
     }
   }
 
+  Widget _appBarButton(IconData icon, String tooltip, VoidCallback onPressed) {
+    return IconButton(
+      icon: Icon(icon),
+      tooltip: tooltip,
+      color: Colors.grey,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+      onPressed: onPressed,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: tabLength,
-      child: Scaffold(
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      backgroundColor: Theme.of(context).primaryColor,
+      appBar: AppBar(
         backgroundColor: Theme.of(context).primaryColor,
-        appBar: AppBar(
-          backgroundColor: Theme.of(context).primaryColor,
-          elevation: 0,
-          leading: const Icon(Icons.nightlight_outlined),
-          flexibleSpace: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10.0),
-            child: Row(
-              children: [
-                const SizedBox(width: 50),
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  padding: const EdgeInsets.only(right: 10, left: 5),
-                  color: Colors.white,
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  onPressed: showBackButton
-                      ? () {
-                          setState(() {
-                            gamePage = GamePage(searchedGames: hotListGames, updateLibraryGames: updateLibraryGames);
-                            showBackButton = false;
-                          });
-                          navLibraryKey.currentState?.popUntil((route) => route.isFirst);
-                          navGameKey.currentState?.popUntil((route) => route.isFirst);
-                        }
-                      : null,
-                ),
-                TabBar(
-                  controller: tabController,
-                  isScrollable: true,
-                  tabs: <Tab>[
-                    Tab(text: AppLocalizations.of(context)!.library),
-                    Tab(text: AppLocalizations.of(context)!.game),
-                  ],
-                ),
-                const Spacer(),
-                CustomSearchBar(updateSearchGames: updateSearchGames),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  color: Colors.grey,
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (BuildContext context) => CustomAddGame(updateLibraryGames: updateLibraryGames),
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.settings),
-                  color: Colors.grey,
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (BuildContext context) => CustomSettingDialog(
-                        updateLanguage: updateLanguage,
-                        latestVersion: latestVersion,
-                        updateLibraryGames: updateLibraryGames,
-                      ),
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.exit_to_app),
-                  color: Colors.grey,
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  onPressed: () {
-                    onWindowClose();
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-        body: TabBarView(controller: tabController, children: [libraryPage, gamePage]),
+        elevation: 0,
+        leading: const Icon(Icons.nightlight_outlined),
+        title: Text(l10n.title),
+        actions: [
+          _appBarButton(Icons.add, l10n.addTrainer, _addTrainer),
+          _appBarButton(Icons.settings, l10n.setting, () {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext context) => CustomSettingDialog(updateLanguage: updateLanguage, onConfigChanged: _saveConfig),
+            );
+          }),
+          _appBarButton(Icons.exit_to_app, MaterialLocalizations.of(context).closeButtonTooltip, onWindowClose),
+          const SizedBox(width: 10),
+        ],
       ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : LibraryPage(trainers: trainers, onLaunch: _launch, onEdit: _editTrainer, onRemove: _removeTrainer),
     );
   }
 }

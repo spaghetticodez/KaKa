@@ -1,118 +1,76 @@
 <div align="center">
-  <img width="160" src="image/LaLa_round.png">
-  <h1>LaLa Trainers Launcher</h1>
-  <div>
-    <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white">
-    <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black">
-    <img src="https://img.shields.io/badge/steam-%23000000.svg?style=for-the-badge&logo=steam&logoColor=white">
-  </div>
-  <div>
-    <img src="https://img.shields.io/badge/License-AGPL_v3-blue.svg">
-  </div>
-  A free, cross-platform launcher to easily discover, manage, and run game trainers🤗.  
-  <br><br>
-  <span style="font-size: 16px;"><a href="./README_zh.md">中文</a> - <a href="./README_de.md">German</a></span>
+  <img src="image/LaLa_round.png" width="120" alt="KaKa logo">
+  <h1>KaKa Trainer Launcher</h1>
+  <p>Run your own Windows game trainers inside the Proton prefix of the game you are playing — on Linux.</p>
 </div>
 
-# 👀 Screenshots
-<div align="center">
-  <img src="image/library.png" width=600 />
-  <img src="image/game.png" width=600 />
-  <img src="image/detail.png" width=600 />
-</div>
+KaKa is a **Linux-only, offline** fork of [LaLa Trainers Launcher](https://github.com/wyyadd/LaLa).
+It has no online catalogue, no update checks and no telemetry: you add trainer `.exe` files you
+already have, KaKa finds the running Proton game and starts the trainer in the same Wine prefix.
 
-## 💻 Supported platforms
-* Windows
-* Linux
-* Steam Deck
-* MacOS (Coming Soon)
+## How it works
 
-## ⚙️ Installation
-You can download prebuilt binaries directly from [**GitHub releases**](https://github.com/wyyadd/LaLa/releases).
-- For **Windows** user, install **exe** file directly.
-- For **Linux** and **Steam deck** user, run one of the following commands to install.
-    - AppImage version
-    ```bash
-    chmod +x LaLa_linux_amd64.AppImage && \
-    ./LaLa_linux_amd64.AppImage
-    ```
-    - Flatpak version
-    ```bash
-    flatpak install --user LaLa_linux_amd64.flatpak && \
-    flatpak run com.aironheart.lala
-    ```
-    - Binary version  
-    ```bash
-    unzip LaLa_linux_amd64.zip -d destination_folder && \
-    chmod +x destination_folder/LaLa && \
-    ./destination_folder/LaLa
-    ```
-    - Deb version: only for Debian-based and Ubuntu-based linux
-    ```bash
-    sudo dpkg -i LaLa_linux_amd64.deb && \
-    LaLa
-    ```
-    
-## ⚠️ Important notice for Linux and Steam Deck user
-The LaLa Launcher for Linux relies on [**Proton**](https://github.com/ValveSoftware/Proton) to run trainers.   
-To use trainers, you must:
-- Install Steam and [set up Proton](docs/enable_proton.md).
-- Have the game already installed.
-- [Make sure the game uses Proton.](docs/enable_proton.md)
+1. Start your game (Steam, Heroic, Lutris, umu-launcher — anything that runs it with Proton).
+2. In KaKa, click **+**, pick the trainer `.exe`, give it a name (optional cover image).
+3. Click the trainer card. KaKa:
+   - finds the running game through its `STEAM_COMPAT_DATA_PATH` (works for any library drive and
+     non-Steam shortcuts),
+   - uses the same Proton build the game was started with (or the one recorded in the prefix's `config_info`),
+   - runs `proton run <trainer.exe>` with the trainer's own folder as working directory,
+   - writes a log to `~/.local/state/kaka/logs/` and shows the error output if the trainer exits immediately.
 
-For **Steam Deck** users who use LaLa in **gaming mode**:
-- Please add LaLa as a non-steam game.
-- **Flatpak LaLa** is not supported for gaming mode.
-- Use **Mouse Only** button Layout for better experience.
+**Steam AppID (optional, per trainer)** — set it when several Proton games run at once, or when you
+want to start the trainer *before* the game (KaKa then looks up `steamapps/compatdata/<AppID>` in all
+your Steam libraries). See [how to find the AppID](docs/how_to_get_appid.md).
 
-For users who use [Flatpak Steam](https://flathub.org/apps/com.valvesoftware.Steam), you need to:
-- Add AppImage LaLa as a Non-Steam game.
-- Use ```IN_FLATPAK_STEAM=1 %command% --appimage-extract-and-run``` as LaLa's launch options.
-- Open LaLa through steam.
+When KaKa is closed, it stops the trainers it started (only those — the game and its Wine services keep running).
 
-## 📌 Common Issues
-### Trouble setting Steam path on Linux
-LaLa uses this default path: ```~/.local/share/Steam```  
-If it doesn’t work, you may need to set it manually. The path must contain the steamapps folder so LaLa can find your games.
-#### Example paths
-- `~/.local/share/Steam`
-- `~/.steam/steam`
-- Flatpak:
-  `~/.var/app/com.valvesoftware.Steam/.local/share/Steam`
+## Build
 
-### Trainers not detecting games
-If trainers cannot detect your game:
-1. [Make sure the game uses Proton.](docs/enable_proton.md)
-2. Launch the game first, then start the trainer.
-3. If it still doesn’t work, try switching to a different trainer version.
+Requires the Flutter version pinned in [`.fvmrc`](.fvmrc) and the usual Linux desktop toolchain
+(`clang cmake ninja pkgconf gtk3`).
 
-## 🙋 FAQ
-### During installation, my operating system warns about security.
-LaLa Trainers Launcher is an open-source software developed using Flutter. Any security warning you encounter during installation is a false positive from your system. You can safely proceed with the installation.
+```sh
+flutter pub get
+flutter analyze
+flutter test
+flutter build linux --release
+./build/linux/x64/release/bundle/kaka
+```
 
-### Is the trainers downloaded by LaLa Trainers Launcher safe?
-All of the trainers used by LaLa Trainers Launcher are sourced from [**Fling Trainers**](https://flingtrainer.com).
-While every effort is made to ensure their safety, please use them **responsibly**, and be aware that the use of trainers can carry risks.
+Packaging (AppImage / Flatpak / Arch package) is not decided yet; the files in `dist/` are legacy
+LaLa recipes and are not maintained.
 
-### Where is LaLa Trainers Launcher's cache data stored?
-On Windows, the cache data is located in the ```%LOCALAPPDATA%/com.aironheart.lala``` directory.  
-On Linux, it can be found in either ```$XDG_CACHE_HOME/com.aironheart.lala``` or ```~/.cache/com.aironheart.lala```.
+## Data
 
-### On Linux or Steam Deck, why some trainers won't start?
-This is an issue related to .Net dependencies. Please check [this issue](https://github.com/madewokherd/wine-mono/issues/167) for more details.   
-**Temporary Solution**: [Reinstalling dotnet40](docs/reinstall_dotnet40.md).
+| What | Where |
+|---|---|
+| Library and settings | `$XDG_DATA_HOME/io.github.spaghetticodez.kaka/` (`~/.local/share/...`) |
+| Launch logs (last 20) | `$XDG_STATE_HOME/kaka/logs/` (`~/.local/state/...`) |
 
-### On Linux or Steam Deck Gaming mode, why some trainers keep flickering?
-This is an issue related to wayland. Please check [this issue](https://github.com/wyyadd/LaLa/issues/6) for more details.  
-**Temporary Solution**: Switch from wayland to X11 or [Enable Virtual Desktop](docs/enable_virtual_desktop.md).
+On first start, custom trainers from an existing LaLa install (`~/.cache/com.aironheart.lala/config`)
+are imported once. LaLa online-catalogue entries are skipped. The LaLa files are not modified.
 
-### Why is it named LaLa Trainers Launcher?
-It's named after my love for the movie "La La Land". I hope you can enjoy using the software.💃🏽
+## Troubleshooting
 
-## ☕ Support
-Servers aren't free and running/maintaining this project isn't free either😢.   
-If you want to support me, you can [**buy me a coffee**](https://ko-fi.com/LaLaLauncher).  
-<p align="center">
-	<img src="https://github.githubassets.com/images/modules/site/sponsors/logo-mona.svg" height="200" width="200" alt="Mona logo"/>
-</p>
+- **"No running Proton game found"** — start the game first and [make sure it uses Proton](docs/enable_proton.md).
+- **Trainer says "game not detected"** — the trainer probably does not match the game version.
+  Try a trainer build for your game version.
+- **Steam not found** (only needed when starting a trainer before the game) — set the Steam folder
+  (the one containing `steamapps/`) in Settings. KaKa checks `~/.steam/root`, `~/.local/share/Steam`,
+  `~/.steam/steam`, Debian, Flatpak and Snap Steam locations automatically.
+- **Some trainers will not start** — often a .NET issue in the prefix, see [reinstalling dotnet40](docs/reinstall_dotnet40.md).
+- **Trainer window flickers** — Wayland issue; use X11 or [enable a Wine virtual desktop](docs/enable_virtual_desktop.md).
+- **"Previous instance did not exit properly"** (FLiNG trainers) — delete the trainer's temp folders in the
+  prefix: `pfx/drive_c/users/steamuser/AppData/Local/Temp/` and `.../AppData/Local/FLiNGTrainer/`.
+- Anything else: check the newest log in `~/.local/state/kaka/logs/`.
 
+## Safety
+
+Trainers are Windows programs that modify game memory. KaKa runs whatever `.exe` you add, with your
+user's permissions (Wine maps your whole filesystem as drive `Z:`). Only add trainers from sources you
+trust, and never use them in online or anti-cheat protected games.
+
+## License and credits
+
+AGPL-3.0, see [LICENSE](LICENSE). Based on [wyyadd/LaLa](https://github.com/wyyadd/LaLa) by wyyadd.

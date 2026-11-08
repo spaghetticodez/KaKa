@@ -1,125 +1,47 @@
-class Trainer {
-  String versionName;
-  String trainerUrl;
+import 'dart:math';
 
-  Trainer({
-    required this.versionName,
-    required this.trainerUrl,
-  });
-
-  factory Trainer.fromJson(Map<String, dynamic> json) {
-    return Trainer(
-      versionName: json['version_name'] as String,
-      trainerUrl: json['trainer_url'] as String,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'version_name': versionName,
-      'trainer_url': trainerUrl,
-    };
-  }
-}
-
-abstract class Game {
+/// A user-added trainer. KaKa never downloads trainers: every entry points at a local `.exe`.
+class TrainerEntry {
+  final String id;
   String name;
-  int appId;
-
-  Game({required this.name, required this.appId});
-
-  Map<String, dynamic> toJson();
-
-  String get id {
-    return '$appId:$name';
-  }
-}
-
-class OnlineGame extends Game {
-  String nameZh;
-  String specialNotes;
-  String coverImageUrl;
-  String? selectedVersion;
-  List<Trainer> trainers;
-  String? customSteamPath;
-
-  OnlineGame({
-    required super.name,
-    required this.nameZh,
-    required super.appId,
-    required this.specialNotes,
-    required this.coverImageUrl,
-    this.selectedVersion,
-    required this.trainers,
-    this.customSteamPath,
-  });
-
-  factory OnlineGame.fromJson(Map<String, dynamic> json) {
-    List<dynamic> trainerList = json['trainers'];
-    List<Trainer> trainers = [];
-    for (var trainerJson in trainerList) {
-      trainers.add(Trainer.fromJson(trainerJson));
-    }
-
-    return OnlineGame(
-      name: json['name'] as String,
-      nameZh: json['name_zh'] == null ? json['name'] : json['name_zh'] as String,
-      appId: json['app_id'] as int,
-      specialNotes: json['special_notes'] ?? '',
-      coverImageUrl: json['cover_image_url'] as String,
-      selectedVersion: json['selected_version'] as String?,
-      trainers: trainers,
-      customSteamPath: json['custom_steam_path'] as String?,
-    );
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    List<Map<String, dynamic>> trainerList = [];
-    for (var trainer in trainers) {
-      trainerList.add(trainer.toJson());
-    }
-
-    return {
-      'name': name,
-      'name_zh': nameZh,
-      'app_id': appId,
-      'special_notes': specialNotes,
-      'cover_image_url': coverImageUrl,
-      'selected_version': selectedVersion,
-      'trainers': trainerList,
-      'custom_steam_path': customSteamPath,
-    };
-  }
-}
-
-class CustomGame extends Game {
-  String coverImagePath;
   String trainerPath;
+  String coverImagePath;
 
-  CustomGame({
-    required super.name,
-    required super.appId,
-    required this.coverImagePath,
-    required this.trainerPath,
-  });
+  /// Optional Steam AppID of the target game. Used to pick the right game when
+  /// several are running, or to find the prefix when the game is not running yet.
+  int? steamAppId;
 
-  factory CustomGame.fromJson(Map<String, dynamic> json) {
-    return CustomGame(
-      name: json['name'] as String,
-      appId: json['app_id'] as int,
-      coverImagePath: json['cover_image_path'] as String,
-      trainerPath: json['trainer_path'] as String,
+  TrainerEntry({required this.id, required this.name, required this.trainerPath, this.coverImagePath = '', this.steamAppId});
+
+  static String newId() {
+    final random = Random.secure();
+    return List.generate(16, (_) => random.nextInt(16).toRadixString(16)).join();
+  }
+
+  /// Returns null for entries that are unusable offline, such as LaLa
+  /// online-catalogue games (they have no local `trainer_path`).
+  static TrainerEntry? fromJson(Map<String, dynamic> json) {
+    final name = json['name'];
+    final trainerPath = json['trainer_path'];
+    if (name is! String || trainerPath is! String || trainerPath.isEmpty) return null;
+    final id = json['id'];
+    final cover = json['cover_image_path'];
+    final appId = json['steam_app_id'];
+    return TrainerEntry(
+      // Legacy LaLa custom games have a random numeric app_id instead of an id.
+      id: id is String && id.isNotEmpty ? id : 'lala-${json['app_id'] ?? newId()}',
+      name: name,
+      trainerPath: trainerPath,
+      coverImagePath: cover is String ? cover : '',
+      steamAppId: appId is int && appId > 0 ? appId : null,
     );
   }
 
-  @override
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'app_id': appId,
-      'cover_image_path': coverImagePath,
-      'trainer_path': trainerPath,
-    };
-  }
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'trainer_path': trainerPath,
+        'cover_image_path': coverImagePath,
+        'steam_app_id': steamAppId,
+      };
 }

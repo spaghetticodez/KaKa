@@ -33,25 +33,14 @@ dependencies:
     sdk: flutter
   intl: any
 
-  http: ^1.1.0
-  file: ^7.0.0
   path: ^1.8.3
   path_provider: ^2.1.1
   window_manager: ^0.5.1
-  cached_network_image: ^3.3.0
-  flutter_cache_manager: ^3.4.1
   url_launcher: ^6.1.14
   package_info_plus: ^9.0.0
   file_picker: ^11.0.2
   synchronized: ^3.1.0
   vdf: ^1.1.0
-
-dependency_overrides:
-  flutter_cache_manager:
-    git:
-      url: https://github.com/Baseflow/flutter_cache_manager
-      ref: 515cc9e584ef9c8f5b4992e5c27b8661bbc8cb45
-      path: flutter_cache_manager
 
 
 dev_dependencies:

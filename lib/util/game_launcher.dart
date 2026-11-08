@@ -1,156 +1,221 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 
 import '../l10n/app_localizations.dart';
-import 'game_loader.dart';
+import 'dto.dart';
+import 'proton.dart';
+import 'widget.dart';
 
-String customSteamPath = "";
+/// Steam install root chosen in Settings. Empty means auto-detect.
+String customSteamPath = '';
 
-Future<void> launchGame(BuildContext context, String trainerPath, int appId, VoidCallback stopCircleIndicator, bool isCustomTrainer,
-    {String? gameCustomSteamPath}) async {
+/// How long a freshly started trainer is watched for an immediate failure.
+const Duration _startupWatch = Duration(seconds: 4);
+const int _keptLogs = 20;
+
+/// Executable names of trainers started in this session (lower case), used to
+/// stop exactly those processes on exit.
+final Set<String> _startedTrainerExes = {};
+
+class LaunchException implements Exception {
+  final String message;
+
+  LaunchException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+/// Everything needed to run a trainer inside a game's Proton prefix.
+class LaunchPlan {
+  final String protonScript;
+  final String compatDataPath;
+  final String clientInstallPath;
+
+  const LaunchPlan({required this.protonScript, required this.compatDataPath, required this.clientInstallPath});
+}
+
+bool _dirExists(String path) => Directory(path).existsSync();
+
+bool _isFile(String path) => File(path).existsSync();
+
+String _resolve(String path) {
   try {
-    await _launchGame(context, trainerPath, appId, stopCircleIndicator, isCustomTrainer, gameCustomSteamPath: gameCustomSteamPath);
+    return Directory(path).resolveSymbolicLinksSync();
+  } on FileSystemException {
+    return path;
+  }
+}
+
+String get _home => Platform.environment['HOME'] ?? '';
+
+/// Launches [entry] and reports success or failure in the UI.
+Future<void> launchTrainer(BuildContext context, TrainerEntry entry) async {
+  final l10n = AppLocalizations.of(context)!;
+  try {
+    final plan = resolveLaunchPlan(entry, l10n);
+    await startTrainer(entry, plan, l10n);
+    if (context.mounted) showSnakeBar(context: context, message: l10n.launched(entry.name), time: 2);
   } catch (e) {
-    if (context.mounted) {
-      showDialog<void>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text(AppLocalizations.of(context)!.launchFail),
-            content: SelectableText(e.toString()),
-            actions: <Widget>[
-              TextButton(
-                child: Text(AppLocalizations.of(context)!.ok),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
+    debugPrint('Launch failed: $e');
+    if (context.mounted) _showError(context, l10n, e.toString());
+  }
+}
+
+/// Works out which prefix and Proton build to use. Throws [LaunchException]
+/// with a user-facing message when that is impossible.
+LaunchPlan resolveLaunchPlan(TrainerEntry entry, AppLocalizations l10n) {
+  if (!_isFile(entry.trainerPath)) throw LaunchException(l10n.trainerPathNotFound(entry.trainerPath));
+
+  final games = detectRunningGames(readProcesses());
+  final appId = entry.steamAppId;
+  RunningGame? game;
+  if (appId != null) {
+    game = matchGame(games, appId);
+  } else if (games.length == 1) {
+    game = games.single;
+  } else if (games.length > 1) {
+    throw LaunchException(l10n.multipleGamesRunning(games.map((g) => '• ${g.displayName}').join('\n')));
+  } else {
+    throw LaunchException(l10n.gameNotRunning);
+  }
+
+  String? steamRoot() {
+    final root = findSteamRoot(_home, override: customSteamPath, dirExists: _dirExists);
+    return root == null ? null : _resolve(root);
+  }
+
+  final String prefix;
+  final String client;
+  if (game != null) {
+    // Prefer what the game's own launcher exported: always the right drive and Steam root.
+    prefix = game.compatDataPath;
+    client = game.clientInstallPath ?? steamRoot() ?? '';
+  } else {
+    // Bound to an AppID whose game is not running: locate its prefix in the Steam libraries.
+    final root = steamRoot();
+    if (root == null) throw LaunchException(l10n.steamPathNotFound(steamRootCandidates(_home, override: customSteamPath).join('\n')));
+    final vdfFile = File(p.join(root, 'steamapps', 'libraryfolders.vdf'));
+    final libraries = [root, if (vdfFile.existsSync()) ...libraryPaths(vdfFile.readAsStringSync())];
+    final found = findPrefix(appId!, libraries, _dirExists);
+    if (found == null) throw LaunchException(l10n.prefixNotFound(appId));
+    prefix = found;
+    client = root;
+  }
+
+  var proton = game?.protonScript;
+  if (proton == null || !_isFile(proton)) {
+    final configInfo = File(p.join(prefix, 'config_info'));
+    final dir = configInfo.existsSync() ? protonDirFromConfigInfo(configInfo.readAsStringSync(), _isFile) : null;
+    if (dir == null) throw LaunchException(l10n.protonPathNotFound(prefix));
+    proton = p.join(dir, 'proton');
+  }
+  return LaunchPlan(protonScript: proton, compatDataPath: prefix, clientInstallPath: client);
+}
+
+/// Starts the trainer through Proton and watches it for [watch]. Throws
+/// [LaunchException] with the log tail if it exits with an error in that time.
+Future<void> startTrainer(TrainerEntry entry, LaunchPlan plan, AppLocalizations l10n, {Directory? logDir, Duration watch = _startupWatch}) async {
+  final logFile = await _newLogFile(entry.name, logDir ?? _defaultLogDir());
+  final sink = logFile.openWrite();
+  sink
+    ..writeln('# KaKa trainer launch ${DateTime.now().toIso8601String()}')
+    ..writeln('# trainer: ${entry.trainerPath}')
+    ..writeln('# proton:  ${plan.protonScript}')
+    ..writeln('# prefix:  ${plan.compatDataPath}')
+    ..writeln('# steam:   ${plan.clientInstallPath}');
+
+  final Process process;
+  try {
+    process = await Process.start(
+      plan.protonScript,
+      ['run', entry.trainerPath],
+      // Trainers often load files next to themselves.
+      workingDirectory: p.dirname(entry.trainerPath),
+      environment: {
+        'STEAM_COMPAT_CLIENT_INSTALL_PATH': plan.clientInstallPath,
+        'STEAM_COMPAT_DATA_PATH': plan.compatDataPath,
+        trainerMarkerEnv: '1',
+      },
+    );
+  } catch (e) {
+    sink.writeln('# failed to start: $e');
+    await sink.close();
+    rethrow;
+  }
+  _startedTrainerExes.add(p.basename(entry.trainerPath).toLowerCase());
+
+  final stdoutDone = process.stdout.listen(sink.add).asFuture<void>();
+  final stderrDone = process.stderr.listen(sink.add).asFuture<void>();
+  final finished = Future.wait<Object?>([process.exitCode, stdoutDone, stderrDone]).then((results) async {
+    final code = results[0] as int;
+    sink.writeln('# exit code $code');
+    await sink.close();
+    return code;
+  });
+
+  final code = await Future.any<int?>([finished, Future<int?>.delayed(watch, () => null)]);
+  if (code != null && code != 0) {
+    final lines = (await logFile.readAsLines()).where((l) => !l.startsWith('# ')).toList();
+    final tail = lines.skip(lines.length > 15 ? lines.length - 15 : 0).join('\n');
+    throw LaunchException(l10n.trainerExited(code, tail, logFile.path));
+  }
+}
+
+Directory _defaultLogDir() {
+  final state = Platform.environment['XDG_STATE_HOME'];
+  final base = state != null && state.isNotEmpty ? state : p.join(_home, '.local', 'state');
+  return Directory(p.join(base, 'kaka', 'logs'));
+}
+
+Future<File> _newLogFile(String name, Directory dir) async {
+  await dir.create(recursive: true);
+
+  final logs = dir.listSync().whereType<File>().where((f) => f.path.endsWith('.log')).toList()..sort((a, b) => a.path.compareTo(b.path));
+  for (final old in logs.take(logs.length >= _keptLogs ? logs.length - _keptLogs + 1 : 0)) {
+    try {
+      old.deleteSync();
+    } on FileSystemException {
+      // Best effort only.
+    }
+  }
+
+  final stamp = DateTime.now().toIso8601String().split('.').first.replaceAll(':', '-');
+  var safe = name.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
+  if (safe.length > 40) safe = safe.substring(0, 40);
+  return File(p.join(dir.path, '$stamp-$safe.log'));
+}
+
+/// Stops trainers started by this KaKa session. Only processes carrying the
+/// KaKa marker *and* the trainer's executable name are signalled, so Wine
+/// services shared with a running game (wineserver, explorer.exe, ...) survive.
+Future<void> stopAllTrainers() async {
+  if (_startedTrainerExes.isEmpty) return;
+  for (final proc in readProcesses()) {
+    if (proc.env[trainerMarkerEnv] != '1') continue;
+    final mentionsTrainer = proc.cmdline.any((arg) => _startedTrainerExes.contains(p.basename(arg.replaceAll('\\', '/')).toLowerCase()));
+    if (!mentionsTrainer) continue;
+    Process.killPid(proc.pid, ProcessSignal.sigterm);
+  }
+}
+
+void _showError(BuildContext context, AppLocalizations l10n, String message) {
+  showDialog<void>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(l10n.launchFail),
+        content: SingleChildScrollView(child: SelectableText(message)),
+        actions: <Widget>[
+          TextButton(
+            child: Text(l10n.ok),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
       );
-    }
-  } finally {
-    stopCircleIndicator();
-  }
-}
-
-Future<void> _launchGame(BuildContext context, String trainerPath, int appId, VoidCallback stopCircleIndicator, bool isCustomTrainer,
-    {String? gameCustomSteamPath}) async {
-  if (!await File(trainerPath).exists()) {
-    if (!context.mounted) return;
-    throw Exception(AppLocalizations.of(context)!.trainerPathNotFound(trainerPath));
-  }
-  {
-    if (!context.mounted) return;
-    String steamPath = await getSteamPath(context, appId, gameCustomSteamPath: gameCustomSteamPath);
-    String gamePath = '$steamPath/steamapps/compatdata/$appId';
-    if (isCustomTrainer || !await dirExist(gamePath)) {
-      int? nonSteamGameId = _getAppIdFromPS();
-      if (nonSteamGameId == null) {
-        if (!context.mounted) return;
-        if (isCustomTrainer) {
-          throw Exception(AppLocalizations.of(context)!.customTrainerGamePathNotFound);
-        } else {
-          throw Exception(AppLocalizations.of(context)!.gamePathNotFound(gamePath));
-        }
-      } else {
-        gamePath = '$steamPath/steamapps/compatdata/$nonSteamGameId';
-        if (!await dirExist(gamePath)) {
-          if (!context.mounted) return;
-          throw Exception(AppLocalizations.of(context)!.gamePathNotFound(gamePath));
-        }
-      }
-    }
-
-    if (!context.mounted) return;
-    String protonPath = await _getProtonPath(context, gamePath);
-    stopCircleIndicator();
-    if (_inSandbox()) {
-      await Process.run('flatpak-spawn', [
-        '--host',
-        '--env=STEAM_COMPAT_CLIENT_INSTALL_PATH=$steamPath',
-        '--env=STEAM_COMPAT_DATA_PATH=$gamePath',
-        protonPath,
-        'run',
-        trainerPath,
-      ]);
-    } else {
-      await Process.run(protonPath, [
-        'run',
-        trainerPath
-      ], environment: {
-        'STEAM_COMPAT_CLIENT_INSTALL_PATH': steamPath,
-        'STEAM_COMPAT_DATA_PATH': gamePath,
-      });
-    }
-  }
-}
-
-Future<String> _getProtonPath(BuildContext context, String gamePath) async {
-  String? protonPath;
-  final configInfoFile = File('$gamePath/config_info');
-  if (await configInfoFile.exists()) {
-    final lines = await configInfoFile.readAsLines();
-    if (lines.length >= 2) {
-      var arr = lines[1].split('/');
-      int index = arr.indexWhere((element) {
-        return element.toLowerCase().contains('proton');
-      });
-      protonPath = arr.sublist(0, index + 1).join('/');
-    }
-  }
-  if (protonPath == null) {
-    if (!context.mounted) return "";
-    throw Exception(AppLocalizations.of(context)!.protonPathNotFound("Null"));
-  }
-  if (!await dirExist(protonPath) && context.mounted) {
-    throw Exception(AppLocalizations.of(context)!.protonPathNotFound(protonPath));
-  }
-  return '$protonPath/proton';
-}
-
-int? _getAppIdFromPS() {
-  ProcessResult processResult;
-  if (_inSandbox()) {
-    processResult = Process.runSync('flatpak-spawn', ['--host', '/bin/sh', '-c', 'ps aux | grep "SteamLaunch AppId=" | grep -v -i "lala"']);
-  } else {
-    processResult = Process.runSync('/bin/sh', ['-c', 'ps aux | grep "SteamLaunch AppId=" | grep -v -i "lala"']);
-  }
-  if (processResult.exitCode == 0) {
-    final outputLines = (processResult.stdout as String).split('\n');
-    for (final line in outputLines) {
-      final match = RegExp(r'SteamLaunch AppId=(\d+)').firstMatch(line);
-      final appId = int.tryParse(match?.group(1) ?? '');
-      if (appId != null) {
-        return appId;
-      }
-    }
-  }
-  return null;
-}
-
-Future<bool> dirExist(String path) async {
-  return await Directory(path).exists();
-}
-
-Future<void> killAllTrainers() async {
-  if (_inSandbox()) {
-    Process.runSync('flatpak-spawn', ['--host', 'pkill', '-f', r'TrainerCacheData.*\.exe$']);
-  } else {
-    Process.runSync('pkill', ['-f', r'TrainerCacheData.*\.exe$']);
-  }
-}
-
-bool _inSandbox() {
-  // In flatpak sandbox
-  if (Platform.environment['container'] == 'flatpak') {
-    // In flatpak steam, LaLa should in be the same sandbox.
-    if (Platform.environment['IN_FLATPAK_STEAM'] == '1') {
-      return false;
-    }
-    return true;
-  }
-  return false;
+    },
+  );
 }

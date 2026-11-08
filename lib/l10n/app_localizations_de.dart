@@ -12,138 +12,136 @@ class AppLocalizationsDe extends AppLocalizations {
   String get title => 'KaKa Trainer Starter';
 
   @override
-  String get library => 'Bibiliothek';
+  String get launch => 'Starten';
 
   @override
-  String get game => 'Spiel';
+  String get libraryEmpty => 'Noch keine Trainer.\nKlicke auf +, um einen Trainer (.exe) für eines deiner Spiele hinzuzufügen.';
 
   @override
-  String get specialNotes => 'Besondere Hinweise';
+  String get addTrainer => 'Trainer hinzufügen';
 
   @override
-  String get launch => 'Starte';
+  String get editTrainer => 'Trainer bearbeiten';
 
   @override
-  String get notFound => 'Ups, keine Ergebnisse gefunden. Versuche es mit anderen Schlüsselwörtern!';
+  String get edit => 'Bearbeiten';
 
   @override
-  String get libraryEmpty => 'Die Spielebibliothek ist leer.\nSuche und füge deine Favoriten hinzu!';
+  String get gameName => 'Spielname';
 
   @override
-  String get addTrainers => 'Trainer hinzufügen';
+  String get trainerFile => 'Trainer (.exe)';
 
   @override
-  String get gameName => 'Spiel Name:';
+  String get gameCover => 'Coverbild (optional)';
 
   @override
-  String get trainerPath => 'Trainer Pfad:';
+  String get steamAppId => 'Steam-AppID (optional)';
+
+  @override
+  String get steamAppIdHelp => 'Nur nötig, wenn mehrere Spiele gleichzeitig laufen oder der Trainer vor dem Spiel gestartet werden soll.';
 
   @override
   String get select => 'Auswählen';
 
   @override
-  String get gameCover => 'Spiel Cover:\n(Optional)';
-
-  @override
-  String get trainerAdded => 'Trainer erfolgreich hinzugefügt';
+  String get change => 'Ändern';
 
   @override
   String get save => 'Speichern';
 
   @override
-  String get search => 'Suche';
+  String get cancel => 'Abbrechen';
 
   @override
-  String get setting => 'Einstellung';
+  String get remove => 'Entfernen';
+
+  @override
+  String removeTrainerConfirm(Object name) {
+    return '\"$name\" aus der Bibliothek entfernen?\n\nDie Trainer-Datei selbst wird nicht gelöscht.';
+  }
+
+  @override
+  String get trainerAdded => 'Trainer hinzugefügt';
+
+  @override
+  String get trainerUpdated => 'Trainer aktualisiert';
+
+  @override
+  String get requiredFields => 'Spielname und Trainer-Datei sind erforderlich.';
+
+  @override
+  String get invalidAppId => 'Die Steam-AppID muss eine positive Zahl sein.';
+
+  @override
+  String get setting => 'Einstellungen';
 
   @override
   String get language => 'Sprache';
 
   @override
-  String get clearCache => 'Cache leeren';
+  String get steamPath => 'Steam-Pfad';
 
   @override
-  String get clear => 'leeren';
+  String get steamPathAuto => 'Automatisch';
 
   @override
-  String get cacheCleared => 'Cache erfolgreich geleert';
+  String get set => 'Festlegen';
 
   @override
-  String get setSteamPath => 'Steam-Pfad\nfestlegen';
+  String get reset => 'Zurücksetzen';
 
   @override
-  String get set => 'Setzen';
-
-  @override
-  String get steamPathSet => 'Steam Pfad erfolgreich festgelegt';
-
-  @override
-  String get checkUpdate => 'Update prüfen';
-
-  @override
-  String get check => 'Prüfen';
-
-  @override
-  String get supportMe => 'Unterstütze mich';
+  String get steamPathSet => 'Steam-Pfad festgelegt';
 
   @override
   String get ok => 'OK';
 
   @override
-  String newVersion(Object latestVersion) {
-    return '🔥 Neue Version $latestVersion verfügbar!';
-  }
+  String get launchFail => 'Start fehlgeschlagen';
 
   @override
-  String get upToDate => '🎉 Bereits aktuell';
-
-  @override
-  String get downloadLink => 'Download-Link:';
-
-  @override
-  String protonPathNotFound(Object protonPath) {
-    return 'Proton-Pfad nicht gefunden.\n\nBitte stelle sicher, dass Proton installiert ist und das Spiel Proton verwendet.\n\nAktueller Pfad: $protonPath';
+  String launched(Object name) {
+    return 'Trainer gestartet: $name';
   }
 
   @override
   String trainerPathNotFound(Object trainerPath) {
-    return 'Trainerpfad nicht gefunden.\n\nAktueller Pfad: $trainerPath';
+    return 'Trainer-Datei nicht gefunden.\n\nPfad: $trainerPath';
   }
 
   @override
-  String steamPathNotFound(Object defaultPath, Object steamPath) {
-    return 'steamapps Ordner unter Steam-Pfad nicht gefunden.\n\nDu kannst den Pfad in den Einstellungen angeben.\n\nAktueller Pfad: $steamPath\n\nStandardpfad: $defaultPath';
+  String get gameNotRunning =>
+      'Kein laufendes Proton-Spiel gefunden.\n\nStarte zuerst das Spiel (Steam, Heroic, Lutris oder ein anderer Proton-Launcher) und dann den Trainer.\n\nUm den Trainer vor dem Spiel zu starten, lege die Steam-AppID für diesen Trainer fest.';
+
+  @override
+  String multipleGamesRunning(Object games) {
+    return 'Mehrere Proton-Spiele laufen:\n\n$games\n\nLege die Steam-AppID für diesen Trainer fest, um eines auszuwählen.';
   }
 
   @override
-  String gamePathNotFound(Object gamePath) {
-    return 'Spielpfad nicht gefunden. Bitte stelle sicher, dass das Spiel installiert ist.\n\nStelle bei Nicht-Steam Spielen oder benutzerdefinierten Trainern sicher, dass das Spiel ausgeführt wird.\n\nAktueller Pfad: $gamePath';
+  String prefixNotFound(Object appId) {
+    return 'Proton-Präfix für Steam-AppID $appId nicht gefunden.\n\nStelle sicher, dass das Spiel installiert ist und mindestens einmal mit Proton gestartet wurde.';
   }
 
   @override
-  String get customTrainerGamePathNotFound =>
-      'Spiel nicht gefunden. \n\nStelle bei Nicht-Steam Spielen oder benutzerdefinierten Trainern sicher, dass das Spiel läuft.';
-
-  @override
-  String get launchFail => 'Start fehlgeschlagen';
-
-  @override
-  String get loadGames => 'Spiele laden';
-
-  @override
-  String get load => 'laden';
-
-  @override
-  String get gameLoaded => 'Spiele erfolgreich geladen';
-
-  @override
-  String libraryPathNotFound(Object libraryPath) {
-    return 'Bibliothekspfad nicht gefunden.\n\nAktueller Pfad: $libraryPath';
+  String protonPathNotFound(Object prefix) {
+    return 'Proton-Installation für dieses Spiel nicht gefunden.\n\nPräfix: $prefix';
   }
 
   @override
-  String get setGameSteamPath => 'Steam-Pfad für Spiel festlegen';
+  String steamPathNotFound(Object paths) {
+    return 'Steam-Installation nicht gefunden. Lege den Steam-Pfad in den Einstellungen fest.\n\nGeprüft:\n$paths';
+  }
 
   @override
-  String get gameSteamPathSet => 'Steam-Pfad für dieses Spiel erfolgreich festgelegt';
+  String trainerExited(Object code, Object logPath, Object output) {
+    return 'Der Trainer wurde sofort beendet (Exit-Code $code).\n\n$output\n\nVollständiges Protokoll: $logPath';
+  }
+
+  @override
+  String get sourceCode => 'Quellcode';
+
+  @override
+  String get basedOn => 'Basiert auf LaLa';
 }

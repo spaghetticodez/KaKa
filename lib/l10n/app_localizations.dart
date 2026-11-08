@@ -99,59 +99,65 @@ abstract class AppLocalizations {
   /// **'KaKa Trainer Launcher'**
   String get title;
 
-  /// No description provided for @library.
-  ///
-  /// In en, this message translates to:
-  /// **'Library'**
-  String get library;
-
-  /// No description provided for @game.
-  ///
-  /// In en, this message translates to:
-  /// **'Game'**
-  String get game;
-
-  /// No description provided for @specialNotes.
-  ///
-  /// In en, this message translates to:
-  /// **'Special Notes'**
-  String get specialNotes;
-
   /// No description provided for @launch.
   ///
   /// In en, this message translates to:
   /// **'Launch'**
   String get launch;
 
-  /// No description provided for @notFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Oops, no results found. Try different keywords!'**
-  String get notFound;
-
   /// No description provided for @libraryEmpty.
   ///
   /// In en, this message translates to:
-  /// **'The game library is empty.\nSearch and add your favorites!'**
+  /// **'No trainers yet.\nClick + to add a trainer (.exe) for one of your games.'**
   String get libraryEmpty;
 
-  /// No description provided for @addTrainers.
+  /// No description provided for @addTrainer.
   ///
   /// In en, this message translates to:
-  /// **'Add Trainers'**
-  String get addTrainers;
+  /// **'Add Trainer'**
+  String get addTrainer;
+
+  /// No description provided for @editTrainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Trainer'**
+  String get editTrainer;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
 
   /// No description provided for @gameName.
   ///
   /// In en, this message translates to:
-  /// **'Game Name:'**
+  /// **'Game name'**
   String get gameName;
 
-  /// No description provided for @trainerPath.
+  /// No description provided for @trainerFile.
   ///
   /// In en, this message translates to:
-  /// **'Trainer Path:'**
-  String get trainerPath;
+  /// **'Trainer (.exe)'**
+  String get trainerFile;
+
+  /// No description provided for @gameCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover image (optional)'**
+  String get gameCover;
+
+  /// No description provided for @steamAppId.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam AppID (optional)'**
+  String get steamAppId;
+
+  /// No description provided for @steamAppIdHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Only needed when several games run at once, or to start the trainer before the game.'**
+  String get steamAppIdHelp;
 
   /// No description provided for @select.
   ///
@@ -159,17 +165,11 @@ abstract class AppLocalizations {
   /// **'Select'**
   String get select;
 
-  /// No description provided for @gameCover.
+  /// No description provided for @change.
   ///
   /// In en, this message translates to:
-  /// **'Game Cover:\n(Optional)'**
-  String get gameCover;
-
-  /// No description provided for @trainerAdded.
-  ///
-  /// In en, this message translates to:
-  /// **'Trainer added successfully'**
-  String get trainerAdded;
+  /// **'Change'**
+  String get change;
 
   /// No description provided for @save.
   ///
@@ -177,16 +177,52 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get save;
 
-  /// No description provided for @search.
+  /// No description provided for @cancel.
   ///
   /// In en, this message translates to:
-  /// **'Search'**
-  String get search;
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get remove;
+
+  /// No description provided for @removeTrainerConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{name}\" from the library?\n\nThe trainer file itself is not deleted.'**
+  String removeTrainerConfirm(Object name);
+
+  /// No description provided for @trainerAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Trainer added'**
+  String get trainerAdded;
+
+  /// No description provided for @trainerUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Trainer updated'**
+  String get trainerUpdated;
+
+  /// No description provided for @requiredFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Game name and trainer file are required.'**
+  String get requiredFields;
+
+  /// No description provided for @invalidAppId.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam AppID must be a positive number.'**
+  String get invalidAppId;
 
   /// No description provided for @setting.
   ///
   /// In en, this message translates to:
-  /// **'Setting'**
+  /// **'Settings'**
   String get setting;
 
   /// No description provided for @language.
@@ -195,29 +231,17 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get language;
 
-  /// No description provided for @clearCache.
+  /// No description provided for @steamPath.
   ///
   /// In en, this message translates to:
-  /// **'Clear Cache'**
-  String get clearCache;
+  /// **'Steam path'**
+  String get steamPath;
 
-  /// No description provided for @clear.
+  /// No description provided for @steamPathAuto.
   ///
   /// In en, this message translates to:
-  /// **'Clear'**
-  String get clear;
-
-  /// No description provided for @cacheCleared.
-  ///
-  /// In en, this message translates to:
-  /// **'Cache cleared successfully'**
-  String get cacheCleared;
-
-  /// No description provided for @setSteamPath.
-  ///
-  /// In en, this message translates to:
-  /// **'Set Steam Path'**
-  String get setSteamPath;
+  /// **'Auto-detect'**
+  String get steamPathAuto;
 
   /// No description provided for @set.
   ///
@@ -225,29 +249,17 @@ abstract class AppLocalizations {
   /// **'Set'**
   String get set;
 
+  /// No description provided for @reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reset;
+
   /// No description provided for @steamPathSet.
   ///
   /// In en, this message translates to:
-  /// **'Steam path set successfully'**
+  /// **'Steam path set'**
   String get steamPathSet;
-
-  /// No description provided for @checkUpdate.
-  ///
-  /// In en, this message translates to:
-  /// **'Check Update'**
-  String get checkUpdate;
-
-  /// No description provided for @check.
-  ///
-  /// In en, this message translates to:
-  /// **'Check'**
-  String get check;
-
-  /// No description provided for @supportMe.
-  ///
-  /// In en, this message translates to:
-  /// **'Support me'**
-  String get supportMe;
 
   /// No description provided for @ok.
   ///
@@ -255,95 +267,71 @@ abstract class AppLocalizations {
   /// **'OK'**
   String get ok;
 
-  /// No description provided for @newVersion.
-  ///
-  /// In en, this message translates to:
-  /// **'🔥 New Version {latestVersion} available!'**
-  String newVersion(Object latestVersion);
-
-  /// No description provided for @upToDate.
-  ///
-  /// In en, this message translates to:
-  /// **'🎉 Already up to date'**
-  String get upToDate;
-
-  /// No description provided for @downloadLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Download Link:'**
-  String get downloadLink;
-
-  /// No description provided for @protonPathNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Proton path not found.\n\nPlease ensure Proton is installed and the game uses Proton.\n\nCurrent Path: {protonPath}'**
-  String protonPathNotFound(Object protonPath);
-
-  /// No description provided for @trainerPathNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Trainer path not found.\n\nCurrent Path: {trainerPath}'**
-  String trainerPathNotFound(Object trainerPath);
-
-  /// No description provided for @steamPathNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'steamapps folder under Steam path not found.\n\nYou can specify the path in the settings.\n\nCurrent Path: {steamPath}\n\nDefault Path: {defaultPath}'**
-  String steamPathNotFound(Object defaultPath, Object steamPath);
-
-  /// No description provided for @gamePathNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Game path not found. Please ensure the game is installed.\n\nFor non-Steam games or custom trainers, make sure the game is running.\n\nCurrent Path: {gamePath}'**
-  String gamePathNotFound(Object gamePath);
-
-  /// No description provided for @customTrainerGamePathNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Game not found. \n\nFor non-Steam games or custom trainers, make sure the game is running.'**
-  String get customTrainerGamePathNotFound;
-
   /// No description provided for @launchFail.
   ///
   /// In en, this message translates to:
   /// **'Launch failed'**
   String get launchFail;
 
-  /// No description provided for @loadGames.
+  /// No description provided for @launched.
   ///
   /// In en, this message translates to:
-  /// **'Load Games'**
-  String get loadGames;
+  /// **'Trainer started: {name}'**
+  String launched(Object name);
 
-  /// No description provided for @load.
+  /// No description provided for @trainerPathNotFound.
   ///
   /// In en, this message translates to:
-  /// **'load'**
-  String get load;
+  /// **'Trainer file not found.\n\nPath: {trainerPath}'**
+  String trainerPathNotFound(Object trainerPath);
 
-  /// No description provided for @gameLoaded.
+  /// No description provided for @gameNotRunning.
   ///
   /// In en, this message translates to:
-  /// **'Games loaded successfully'**
-  String get gameLoaded;
+  /// **'No running Proton game found.\n\nStart the game first (Steam, Heroic, Lutris or another Proton launcher), then launch the trainer.\n\nTo start the trainer before the game, set the Steam AppID on this trainer.'**
+  String get gameNotRunning;
 
-  /// No description provided for @libraryPathNotFound.
+  /// No description provided for @multipleGamesRunning.
   ///
   /// In en, this message translates to:
-  /// **'Library path not found.\n\nCurrent Path: {libraryPath}'**
-  String libraryPathNotFound(Object libraryPath);
+  /// **'Several Proton games are running:\n\n{games}\n\nSet the Steam AppID on this trainer to choose one.'**
+  String multipleGamesRunning(Object games);
 
-  /// No description provided for @setGameSteamPath.
+  /// No description provided for @prefixNotFound.
   ///
   /// In en, this message translates to:
-  /// **'Set Steam Path for Game'**
-  String get setGameSteamPath;
+  /// **'Proton prefix for Steam AppID {appId} not found.\n\nMake sure the game is installed and has been started with Proton at least once.'**
+  String prefixNotFound(Object appId);
 
-  /// No description provided for @gameSteamPathSet.
+  /// No description provided for @protonPathNotFound.
   ///
   /// In en, this message translates to:
-  /// **'Steam path set successfully for this game'**
-  String get gameSteamPathSet;
+  /// **'Proton installation for this game not found.\n\nPrefix: {prefix}'**
+  String protonPathNotFound(Object prefix);
+
+  /// No description provided for @steamPathNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Steam installation not found. Set the Steam path in Settings.\n\nChecked:\n{paths}'**
+  String steamPathNotFound(Object paths);
+
+  /// No description provided for @trainerExited.
+  ///
+  /// In en, this message translates to:
+  /// **'The trainer exited right away (exit code {code}).\n\n{output}\n\nFull log: {logPath}'**
+  String trainerExited(Object code, Object logPath, Object output);
+
+  /// No description provided for @sourceCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get sourceCode;
+
+  /// No description provided for @basedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Based on LaLa'**
+  String get basedOn;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

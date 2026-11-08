@@ -8,6 +8,7 @@
 pub mod game_info;
 pub mod language;
 pub mod launcher;
+pub mod library;
 pub mod model;
 pub mod proton;
 pub mod storage;

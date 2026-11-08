@@ -28,7 +28,9 @@ pub fn xdg_dir(var: &str, fallback: &str) -> PathBuf {
 }
 
 pub fn home_dir() -> PathBuf {
-    std::env::var_os("HOME").map(PathBuf::from).unwrap_or_default()
+    std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .unwrap_or_default()
 }
 
 pub struct LocalStorage {
@@ -56,7 +58,9 @@ impl LocalStorage {
     pub fn from_env() -> Self {
         Self::new(
             xdg_dir("XDG_DATA_HOME", ".local/share").join(APP_ID),
-            xdg_dir("XDG_CACHE_HOME", ".cache").join("com.aironheart.lala").join("config"),
+            xdg_dir("XDG_CACHE_HOME", ".cache")
+                .join("com.aironheart.lala")
+                .join("config"),
         )
     }
 
@@ -108,7 +112,11 @@ impl LocalStorage {
         let _ = self.dir();
         let own = self.own_file(CONFIG_FILE_NAME);
         let own_exists = own.exists();
-        let source = if own_exists { own } else { self.legacy_dir.join(CONFIG_FILE_NAME) };
+        let source = if own_exists {
+            own
+        } else {
+            self.legacy_dir.join(CONFIG_FILE_NAME)
+        };
         let config = if source.exists() {
             read_json(&source, AppConfig::from_json, own_exists)
         } else {
@@ -127,7 +135,10 @@ impl LocalStorage {
     }
 
     fn atomic_write(&self, file: &Path, content: &str) -> io::Result<()> {
-        let _guard = self.write_lock.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let _guard = self
+            .write_lock
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         let mut tmp_name = file.as_os_str().to_owned();
         tmp_name.push(".tmp");
         let tmp = PathBuf::from(tmp_name);
@@ -151,7 +162,10 @@ fn read_json<T>(file: &Path, parse: impl Fn(&Value) -> Option<T>, quarantine: bo
         Err(e) => {
             eprintln!("Could not read {}: {e}", file.display());
             if quarantine {
-                let millis = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or_default();
+                let millis = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_millis())
+                    .unwrap_or_default();
                 let mut aside = file.as_os_str().to_owned();
                 aside.push(format!(".corrupt-{millis}"));
                 // If this fails, the file stays in place and the next save replaces it.
@@ -175,11 +189,22 @@ mod tests {
     }
 
     fn dirs() -> Dirs {
-        let tmp = tempfile::Builder::new().prefix("kaka_storage_").tempdir().unwrap();
+        let tmp = tempfile::Builder::new()
+            .prefix("kaka_storage_")
+            .tempdir()
+            .unwrap();
         let data = tmp.path().join("data").join(APP_ID);
-        let legacy = tmp.path().join("cache").join("com.aironheart.lala").join("config");
+        let legacy = tmp
+            .path()
+            .join("cache")
+            .join("com.aironheart.lala")
+            .join("config");
         fs::create_dir_all(&legacy).unwrap();
-        Dirs { _tmp: tmp, data, legacy }
+        Dirs {
+            _tmp: tmp,
+            data,
+            legacy,
+        }
     }
 
     fn storage(d: &Dirs) -> LocalStorage {
@@ -213,13 +238,19 @@ mod tests {
 
         let s = storage(&d);
         let entries = s.read_library();
-        assert_eq!(entries.iter().map(|e| e.name.as_str()).collect::<Vec<_>>(), ["Mine"]);
+        assert_eq!(
+            entries.iter().map(|e| e.name.as_str()).collect::<Vec<_>>(),
+            ["Mine"]
+        );
         assert!(d.data.join("library.json").exists(), "import is persisted");
 
         let config = s.read_config();
         assert_eq!(config.language.as_deref(), Some("German"));
         assert_eq!(config.steam_path, "/s");
-        assert!(d.legacy.join("library.json").exists(), "the legacy files are left untouched");
+        assert!(
+            d.legacy.join("library.json").exists(),
+            "the legacy files are left untouched"
+        );
     }
 
     #[test]
@@ -243,9 +274,16 @@ mod tests {
         fs::write(d.data.join("library.json"), "{broken").unwrap();
         let s = storage(&d);
         assert!(s.read_library().is_empty());
-        s.write_library(&[TrainerEntry::new("n", "New", "/t/n.exe")]).unwrap();
+        s.write_library(&[TrainerEntry::new("n", "New", "/t/n.exe")])
+            .unwrap();
         let names = names(&d.data);
-        assert_eq!(names.iter().filter(|n| n.starts_with("library.json.corrupt-")).count(), 1);
+        assert_eq!(
+            names
+                .iter()
+                .filter(|n| n.starts_with("library.json.corrupt-"))
+                .count(),
+            1
+        );
         assert!(names.contains(&"library.json".to_owned()));
     }
 
@@ -255,7 +293,11 @@ mod tests {
         fs::create_dir_all(&d.data).unwrap();
         fs::write(d.data.join("library.json"), "{\"a\": 1}").unwrap();
         assert!(storage(&d).read_library().is_empty());
-        assert!(names(&d.data).iter().any(|n| n.starts_with("library.json.corrupt-")));
+        assert!(
+            names(&d.data)
+                .iter()
+                .any(|n| n.starts_with("library.json.corrupt-"))
+        );
     }
 
     #[test]
@@ -285,11 +327,16 @@ mod tests {
         assert_eq!(library[0].name, "ELDEN RING \"Deluxe\" ® – 艾尔登法环");
         assert_eq!(library[0].steam_app_id, Some(1245620));
         assert_eq!(library[1].steam_app_id, None);
-        assert_eq!(library[2].steam_app_id, Some(3123456789), "non-Steam shortcut ids exceed i32");
+        assert_eq!(
+            library[2].steam_app_id,
+            Some(3123456789),
+            "non-Steam shortcut ids exceed i32"
+        );
         assert_eq!(config.language.as_deref(), Some("中文"));
 
         s.write_library(&library).unwrap();
-        s.write_config(config.language.as_deref().unwrap(), &config.steam_path).unwrap();
+        s.write_config(config.language.as_deref().unwrap(), &config.steam_path)
+            .unwrap();
         for name in [LIBRARY_FILE_NAME, CONFIG_FILE_NAME] {
             assert_eq!(
                 fs::read(d.data.join(name)).unwrap(),

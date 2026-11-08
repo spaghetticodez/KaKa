@@ -40,7 +40,11 @@ pub struct ProcessInfo {
 }
 
 impl ProcessInfo {
-    pub fn new<K: Into<String>, V: Into<String>>(pid: i32, env: impl IntoIterator<Item = (K, V)>, cmdline: &[&str]) -> Self {
+    pub fn new<K: Into<String>, V: Into<String>>(
+        pid: i32,
+        env: impl IntoIterator<Item = (K, V)>,
+        cmdline: &[&str],
+    ) -> Self {
         Self {
             pid,
             env: env.into_iter().map(|(k, v)| (k.into(), v.into())).collect(),
@@ -90,7 +94,10 @@ pub fn parse_environ(bytes: &[u8]) -> HashMap<String, String> {
 
 /// Parses a NUL separated `/proc/<pid>/cmdline` blob.
 pub fn parse_cmdline(bytes: &[u8]) -> Vec<String> {
-    let mut parts: Vec<String> = String::from_utf8_lossy(bytes).split('\0').map(str::to_owned).collect();
+    let mut parts: Vec<String> = String::from_utf8_lossy(bytes)
+        .split('\0')
+        .map(str::to_owned)
+        .collect();
     if parts.last().is_some_and(String::is_empty) {
         parts.pop();
     }
@@ -213,11 +220,19 @@ pub fn detect_running_games(processes: &[ProcessInfo]) -> Vec<RunningGame> {
                 .or_else(|| positive_int(proc.env("SteamAppId")))
                 .or_else(|| positive_int(proc.env("SteamGameId")));
             if client.is_none() {
-                client = proc.env("STEAM_COMPAT_CLIENT_INSTALL_PATH").filter(|c| !c.is_empty()).map(str::to_owned);
+                client = proc
+                    .env("STEAM_COMPAT_CLIENT_INSTALL_PATH")
+                    .filter(|c| !c.is_empty())
+                    .map(str::to_owned);
             }
             let cmd = &proc.cmdline;
             for (i, arg) in cmd.iter().enumerate() {
-                if proton.is_none() && basename(arg) == "proton" && cmd.get(i + 1).is_some_and(|verb| PROTON_VERBS.contains(&verb.as_str())) {
+                if proton.is_none()
+                    && basename(arg) == "proton"
+                    && cmd
+                        .get(i + 1)
+                        .is_some_and(|verb| PROTON_VERBS.contains(&verb.as_str()))
+                {
                     proton = Some(arg.clone());
                 }
                 if exe.is_none() && arg.to_lowercase().ends_with(".exe") {
@@ -249,7 +264,9 @@ pub fn detect_running_games(processes: &[ProcessInfo]) -> Vec<RunningGame> {
 /// the launcher exported, or the prefix folder name (`compatdata/<app_id>`).
 pub fn match_game(games: &[RunningGame], app_id: u64) -> Option<&RunningGame> {
     let folder = app_id.to_string();
-    games.iter().find(|g| g.app_id == Some(app_id) || basename(&g.compat_data_path) == folder)
+    games
+        .iter()
+        .find(|g| g.app_id == Some(app_id) || basename(&g.compat_data_path) == folder)
 }
 
 /// Finds the Proton installation directory from a prefix's `config_info`.
@@ -259,7 +276,10 @@ pub fn match_game(games: &[RunningGame], app_id: u64) -> Option<&RunningGame> {
 /// directory containing a `proton` script is found. This handles Steam,
 /// compatibilitytools.d, Heroic (`.../tools/proton/GE-Proton-latest/...`) and
 /// paths where an unrelated parent folder happens to contain "proton".
-pub fn proton_dir_from_config_info(content: &str, is_file: impl Fn(&str) -> bool) -> Option<String> {
+pub fn proton_dir_from_config_info(
+    content: &str,
+    is_file: impl Fn(&str) -> bool,
+) -> Option<String> {
     for raw in content.lines() {
         let line = raw.trim();
         if !line.starts_with('/') {
@@ -296,7 +316,11 @@ pub fn steam_root_candidates(home: &str, override_path: &str) -> Vec<String> {
 }
 
 /// First Steam root candidate that has a `steamapps` directory.
-pub fn find_steam_root(home: &str, override_path: &str, dir_exists: impl Fn(&str) -> bool) -> Option<String> {
+pub fn find_steam_root(
+    home: &str,
+    override_path: &str,
+    dir_exists: impl Fn(&str) -> bool,
+) -> Option<String> {
     steam_root_candidates(home, override_path)
         .into_iter()
         .find(|c| dir_exists(&format!("{c}/steamapps")))
@@ -329,7 +353,9 @@ pub fn is_trainer_process(proc: &ProcessInfo, id: &str, trainer_path: &str) -> b
         return false;
     }
     let exe = exe_name(trainer_path).to_lowercase();
-    proc.cmdline.iter().any(|arg| exe_name(arg).to_lowercase() == exe)
+    proc.cmdline
+        .iter()
+        .any(|arg| exe_name(arg).to_lowercase() == exe)
 }
 
 /// Whether any process (game, trainer, wineserver, ...) uses the Proton prefix
@@ -341,7 +367,9 @@ pub fn prefix_in_use(processes: &[ProcessInfo], compat_data_path: &str) -> bool 
     processes.iter().any(|proc| {
         proc.env("STEAM_COMPAT_DATA_PATH")
             .is_some_and(|c| !c.is_empty() && normalize(c) == compat)
-            || proc.env("WINEPREFIX").is_some_and(|w| !w.is_empty() && normalize(w) == pfx)
+            || proc
+                .env("WINEPREFIX")
+                .is_some_and(|w| !w.is_empty() && normalize(w) == pfx)
     })
 }
 
@@ -358,8 +386,14 @@ mod tests {
     }
 
     const STEAM_GAME_ENV: [(&str, &str); 3] = [
-        ("STEAM_COMPAT_DATA_PATH", "/mnt/games/SteamLibrary/steamapps/compatdata/1245620/"),
-        ("STEAM_COMPAT_CLIENT_INSTALL_PATH", "/home/u/.local/share/Steam"),
+        (
+            "STEAM_COMPAT_DATA_PATH",
+            "/mnt/games/SteamLibrary/steamapps/compatdata/1245620/",
+        ),
+        (
+            "STEAM_COMPAT_CLIENT_INSTALL_PATH",
+            "/home/u/.local/share/Steam",
+        ),
         ("SteamAppId", "1245620"),
     ];
 
@@ -367,14 +401,28 @@ mod tests {
 
     #[test]
     fn splits_nul_separated_blobs_keeps_equals_inside_values() {
-        let env = parse_environ(&nul(&["A=1", "STEAM_COMPAT_DATA_PATH=/x/compatdata/42", "WEIRD=a=b", "NOEQUALS"]));
-        let expected: HashMap<String, String> = [("A", "1"), ("STEAM_COMPAT_DATA_PATH", "/x/compatdata/42"), ("WEIRD", "a=b")]
-            .iter()
-            .map(|(k, v)| ((*k).into(), (*v).into()))
-            .collect();
+        let env = parse_environ(&nul(&[
+            "A=1",
+            "STEAM_COMPAT_DATA_PATH=/x/compatdata/42",
+            "WEIRD=a=b",
+            "NOEQUALS",
+        ]));
+        let expected: HashMap<String, String> = [
+            ("A", "1"),
+            ("STEAM_COMPAT_DATA_PATH", "/x/compatdata/42"),
+            ("WEIRD", "a=b"),
+        ]
+        .iter()
+        .map(|(k, v)| ((*k).into(), (*v).into()))
+        .collect();
         assert_eq!(env, expected);
         assert_eq!(
-            parse_cmdline(&nul(&["python3", "/p/proton", "waitforexitandrun", "game.exe"])),
+            parse_cmdline(&nul(&[
+                "python3",
+                "/p/proton",
+                "waitforexitandrun",
+                "game.exe"
+            ])),
             ["python3", "/p/proton", "waitforexitandrun", "game.exe"]
         );
     }
@@ -387,12 +435,17 @@ mod tests {
     // detect_running_games
 
     #[test]
-    fn steam_game_on_a_second_drive_prefix_steam_root_appid_and_proton_script_come_from_the_environment() {
+    fn steam_game_on_a_second_drive_prefix_steam_root_appid_and_proton_script_come_from_the_environment()
+     {
         let games = detect_running_games(&[
             proc(
                 10,
                 &STEAM_GAME_ENV,
-                &["/home/u/.local/share/Steam/ubuntu12_32/reaper", "SteamLaunch", "AppId=1245620"],
+                &[
+                    "/home/u/.local/share/Steam/ubuntu12_32/reaper",
+                    "SteamLaunch",
+                    "AppId=1245620",
+                ],
             ),
             proc(
                 11,
@@ -407,14 +460,23 @@ mod tests {
             proc(
                 12,
                 &STEAM_GAME_ENV,
-                &["C:\\windows\\system32\\steam.exe", "Z:\\mnt\\games\\x\\eldenring.exe"],
+                &[
+                    "C:\\windows\\system32\\steam.exe",
+                    "Z:\\mnt\\games\\x\\eldenring.exe",
+                ],
             ),
             proc(13, &STEAM_GAME_ENV, &["Z:\\mnt\\games\\x\\eldenring.exe"]),
         ]);
         assert_eq!(games.len(), 1);
         let g = &games[0];
-        assert_eq!(g.compat_data_path, "/mnt/games/SteamLibrary/steamapps/compatdata/1245620");
-        assert_eq!(g.client_install_path.as_deref(), Some("/home/u/.local/share/Steam"));
+        assert_eq!(
+            g.compat_data_path,
+            "/mnt/games/SteamLibrary/steamapps/compatdata/1245620"
+        );
+        assert_eq!(
+            g.client_install_path.as_deref(),
+            Some("/home/u/.local/share/Steam")
+        );
         assert_eq!(g.app_id, Some(1245620));
         assert_eq!(
             g.proton_script.as_deref(),
@@ -428,7 +490,10 @@ mod tests {
         let games = detect_running_games(&[proc(
             20,
             &[
-                ("STEAM_COMPAT_DATA_PATH", "/home/u/Games/Heroic/Prefixes/default/Cyberpunk 2077"),
+                (
+                    "STEAM_COMPAT_DATA_PATH",
+                    "/home/u/Games/Heroic/Prefixes/default/Cyberpunk 2077",
+                ),
                 ("STEAM_COMPAT_CLIENT_INSTALL_PATH", ""),
             ],
             &[
@@ -439,7 +504,10 @@ mod tests {
             ],
         )]);
         assert_eq!(games[0].app_id, None);
-        assert_eq!(games[0].client_install_path, None, "empty value is treated as unset");
+        assert_eq!(
+            games[0].client_install_path, None,
+            "empty value is treated as unset"
+        );
         assert_eq!(games[0].label, "Cyberpunk2077.exe");
     }
 
@@ -450,7 +518,11 @@ mod tests {
         let games = detect_running_games(&[
             proc(30, &marked, &["Z:\\trainers\\EldenRingTrainer.exe"]),
             proc(31, &[("HOME", "/home/u")], &["/usr/bin/bash"]),
-            proc(32, &[("STEAM_COMPAT_DATA_PATH", "/x/compatdata/7")], &["/usr/bin/sleep", "100"]),
+            proc(
+                32,
+                &[("STEAM_COMPAT_DATA_PATH", "/x/compatdata/7")],
+                &["/usr/bin/sleep", "100"],
+            ),
         ]);
         assert!(games.is_empty());
     }
@@ -461,13 +533,22 @@ mod tests {
             proc(40, &STEAM_GAME_ENV, &["Z:\\a\\eldenring.exe"]),
             proc(
                 41,
-                &[("STEAM_COMPAT_DATA_PATH", "/home/u/.local/share/Steam/steamapps/compatdata/3123456789")],
+                &[(
+                    "STEAM_COMPAT_DATA_PATH",
+                    "/home/u/.local/share/Steam/steamapps/compatdata/3123456789",
+                )],
                 &["C:\\x\\shortcut.exe"],
             ),
         ]);
         assert_eq!(games.len(), 2);
-        assert_eq!(match_game(&games, 1245620).map(|g| g.label.as_str()), Some("eldenring.exe"));
-        assert_eq!(match_game(&games, 3123456789).map(|g| g.label.as_str()), Some("shortcut.exe"));
+        assert_eq!(
+            match_game(&games, 1245620).map(|g| g.label.as_str()),
+            Some("eldenring.exe")
+        );
+        assert_eq!(
+            match_game(&games, 3123456789).map(|g| g.label.as_str()),
+            Some("shortcut.exe")
+        );
         assert!(match_game(&games, 999).is_none());
     }
 
@@ -479,7 +560,11 @@ mod tests {
                 &[("STEAM_COMPAT_DATA_PATH", "/c/compatdata/5")],
                 &["C:\\windows\\system32\\services.exe"],
             ),
-            proc(51, &[("STEAM_COMPAT_DATA_PATH", "/c/compatdata/5")], &["C:\\Games\\Real.exe"]),
+            proc(
+                51,
+                &[("STEAM_COMPAT_DATA_PATH", "/c/compatdata/5")],
+                &["C:\\Games\\Real.exe"],
+            ),
         ]);
         assert_eq!(games[0].label, "Real.exe");
     }
@@ -497,7 +582,9 @@ mod tests {
         assert_eq!(
             proton_dir_from_config_info(
                 info,
-                files_at(&["/home/u/.local/share/Steam/compatibilitytools.d/Proton-GE Latest/proton"])
+                files_at(&[
+                    "/home/u/.local/share/Steam/compatibilitytools.d/Proton-GE Latest/proton"
+                ])
             )
             .as_deref(),
             Some("/home/u/.local/share/Steam/compatibilitytools.d/Proton-GE Latest")
@@ -508,7 +595,11 @@ mod tests {
     fn valve_proton_in_steamapps_common() {
         let info = "11.0-100\n/s/steamapps/common/Proton - Experimental/files/share/fonts/\n";
         assert_eq!(
-            proton_dir_from_config_info(info, files_at(&["/s/steamapps/common/Proton - Experimental/proton"])).as_deref(),
+            proton_dir_from_config_info(
+                info,
+                files_at(&["/s/steamapps/common/Proton - Experimental/proton"])
+            )
+            .as_deref(),
             Some("/s/steamapps/common/Proton - Experimental")
         );
     }
@@ -518,21 +609,36 @@ mod tests {
         let base = "/var/home/u/.var/app/com.heroicgameslauncher.hgl/config/heroic/tools/proton/GE-Proton-latest";
         let info = format!("GE-Proton10-4\n{base}/files/share/fonts/\n");
         let script = format!("{base}/proton");
-        assert_eq!(proton_dir_from_config_info(&info, files_at(&[&script])).as_deref(), Some(base));
+        assert_eq!(
+            proton_dir_from_config_info(&info, files_at(&[&script])).as_deref(),
+            Some(base)
+        );
     }
 
     #[test]
     fn home_directory_containing_proton_does_not_confuse_the_lookup() {
         let info = "x\n/home/protonfan/.steam/steam/compatibilitytools.d/GE-Proton9-1/files/share/fonts/\n";
         assert_eq!(
-            proton_dir_from_config_info(info, files_at(&["/home/protonfan/.steam/steam/compatibilitytools.d/GE-Proton9-1/proton"])).as_deref(),
+            proton_dir_from_config_info(
+                info,
+                files_at(&[
+                    "/home/protonfan/.steam/steam/compatibilitytools.d/GE-Proton9-1/proton"
+                ])
+            )
+            .as_deref(),
             Some("/home/protonfan/.steam/steam/compatibilitytools.d/GE-Proton9-1")
         );
     }
 
     #[test]
     fn returns_none_when_the_proton_build_was_removed_or_for_empty_input() {
-        assert!(proton_dir_from_config_info("x\n/gone/GE-Proton8-1/files/share/fonts/\n", files_at(&[])).is_none());
+        assert!(
+            proton_dir_from_config_info(
+                "x\n/gone/GE-Proton8-1/files/share/fonts/\n",
+                files_at(&[])
+            )
+            .is_none()
+        );
         assert!(proton_dir_from_config_info("", files_at(&[])).is_none());
     }
 
@@ -565,7 +671,10 @@ mod tests {
 
     #[test]
     fn runinprefix_when_the_proton_build_supports_it_run_for_older_builds() {
-        assert_eq!(trainer_verb("elif sys.argv[1] == \"runinprefix\":"), "runinprefix");
+        assert_eq!(
+            trainer_verb("elif sys.argv[1] == \"runinprefix\":"),
+            "runinprefix"
+        );
         assert_eq!(trainer_verb("if sys.argv[1] == \"run\":"), "run");
         assert_eq!(trainer_verb(""), "run");
     }
@@ -584,7 +693,11 @@ mod tests {
             PATH
         ));
         assert!(is_trainer_process(
-            &proc(2, &MARKED, &["Z:\\home\\u\\Trainers\\ELDEN RING TRAINER.EXE"]),
+            &proc(
+                2,
+                &MARKED,
+                &["Z:\\home\\u\\Trainers\\ELDEN RING TRAINER.EXE"]
+            ),
             ID,
             PATH
         ));
@@ -593,13 +706,29 @@ mod tests {
     #[test]
     fn never_matches_another_entry_an_unmarked_process_or_a_shared_wine_service() {
         assert!(!is_trainer_process(
-            &proc(3, &[(TRAINER_MARKER_ENV, "1"), (TRAINER_ID_ENV, "other")], &[PATH]),
+            &proc(
+                3,
+                &[(TRAINER_MARKER_ENV, "1"), (TRAINER_ID_ENV, "other")],
+                &[PATH]
+            ),
             ID,
             PATH
         ));
-        assert!(!is_trainer_process(&proc(4, &[(TRAINER_ID_ENV, ID)], &[PATH]), ID, PATH));
-        assert!(!is_trainer_process(&proc(5, &MARKED, &["/p/files/bin/wineserver"]), ID, PATH));
-        assert!(!is_trainer_process(&proc(6, &MARKED, &["C:\\windows\\system32\\explorer.exe"]), ID, PATH));
+        assert!(!is_trainer_process(
+            &proc(4, &[(TRAINER_ID_ENV, ID)], &[PATH]),
+            ID,
+            PATH
+        ));
+        assert!(!is_trainer_process(
+            &proc(5, &MARKED, &["/p/files/bin/wineserver"]),
+            ID,
+            PATH
+        ));
+        assert!(!is_trainer_process(
+            &proc(6, &MARKED, &["C:\\windows\\system32\\explorer.exe"]),
+            ID,
+            PATH
+        ));
     }
 
     // prefix_in_use
@@ -609,17 +738,28 @@ mod tests {
     #[test]
     fn matches_steam_compat_data_path_any_spelling_and_wineprefix_including_kaka_trainers() {
         assert!(prefix_in_use(
-            &[proc(1, &[("STEAM_COMPAT_DATA_PATH", &format!("{COMPAT}/"))], &["game.exe"])],
+            &[proc(
+                1,
+                &[("STEAM_COMPAT_DATA_PATH", &format!("{COMPAT}/"))],
+                &["game.exe"]
+            )],
             COMPAT
         ));
         assert!(prefix_in_use(
-            &[proc(2, &[("WINEPREFIX", &format!("{COMPAT}/pfx"))], &["wineserver"])],
+            &[proc(
+                2,
+                &[("WINEPREFIX", &format!("{COMPAT}/pfx"))],
+                &["wineserver"]
+            )],
             COMPAT
         ));
         assert!(prefix_in_use(
             &[proc(
                 3,
-                &[("STEAM_COMPAT_DATA_PATH", COMPAT), (TRAINER_MARKER_ENV, "1")],
+                &[
+                    ("STEAM_COMPAT_DATA_PATH", COMPAT),
+                    (TRAINER_MARKER_ENV, "1")
+                ],
                 &["Trainer.exe"]
             )],
             COMPAT
@@ -643,10 +783,17 @@ mod tests {
 
     #[test]
     fn reads_numeric_entries_skips_unreadable_ones_and_non_pid_folders() {
-        let root = tempfile::Builder::new().prefix("kaka_proc_").tempdir().unwrap();
+        let root = tempfile::Builder::new()
+            .prefix("kaka_proc_")
+            .tempdir()
+            .unwrap();
         let good = root.path().join("123");
         fs::create_dir(&good).unwrap();
-        fs::write(good.join("environ"), nul(&["STEAM_COMPAT_DATA_PATH=/c/compatdata/9"])).unwrap();
+        fs::write(
+            good.join("environ"),
+            nul(&["STEAM_COMPAT_DATA_PATH=/c/compatdata/9"]),
+        )
+        .unwrap();
         fs::write(good.join("cmdline"), nul(&["C:\\g\\game.exe"])).unwrap();
         fs::create_dir(root.path().join("456")).unwrap(); // vanished process: no files
         fs::create_dir(root.path().join("self")).unwrap();

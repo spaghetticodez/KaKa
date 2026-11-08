@@ -36,7 +36,11 @@ struct EntryJson<'a> {
 }
 
 impl TrainerEntry {
-    pub fn new(id: impl Into<String>, name: impl Into<String>, trainer_path: impl Into<String>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        trainer_path: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -61,8 +65,15 @@ impl TrainerEntry {
     pub fn from_json(json: &Value) -> Option<Self> {
         let obj = json.as_object()?;
         let name = obj.get("name")?.as_str()?;
-        let trainer_path = obj.get("trainer_path")?.as_str().filter(|p| !p.is_empty())?;
-        let id = match obj.get("id").and_then(Value::as_str).filter(|s| !s.is_empty()) {
+        let trainer_path = obj
+            .get("trainer_path")?
+            .as_str()
+            .filter(|p| !p.is_empty())?;
+        let id = match obj
+            .get("id")
+            .and_then(Value::as_str)
+            .filter(|s| !s.is_empty())
+        {
             Some(id) => id.to_owned(),
             // Legacy LaLa custom games have a random numeric app_id instead of an id.
             None => format!(
@@ -74,13 +85,21 @@ impl TrainerEntry {
                 }
             ),
         };
-        let string = |key: &str| obj.get(key).and_then(Value::as_str).unwrap_or_default().to_owned();
+        let string = |key: &str| {
+            obj.get(key)
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_owned()
+        };
         Some(Self {
             id,
             name: name.to_owned(),
             trainer_path: trainer_path.to_owned(),
             cover_image_path: string("cover_image_path"),
-            steam_app_id: obj.get("steam_app_id").and_then(Value::as_u64).filter(|&n| n > 0),
+            steam_app_id: obj
+                .get("steam_app_id")
+                .and_then(Value::as_u64)
+                .filter(|&n| n > 0),
             last_prefix: string("last_prefix"),
         })
     }
@@ -109,7 +128,12 @@ pub fn library_to_json(entries: &[TrainerEntry]) -> String {
 
 /// Parses a library; invalid items are skipped. `None` when the document is not a list.
 pub fn library_from_json(json: &Value) -> Option<Vec<TrainerEntry>> {
-    Some(json.as_array()?.iter().filter_map(TrainerEntry::from_json).collect())
+    Some(
+        json.as_array()?
+            .iter()
+            .filter_map(TrainerEntry::from_json)
+            .collect(),
+    )
 }
 
 /// Settings stored in `config.json`.
@@ -132,8 +156,15 @@ impl AppConfig {
     pub fn from_json(json: &Value) -> Option<Self> {
         let obj = json.as_object()?;
         Some(Self {
-            language: obj.get("language").and_then(Value::as_str).map(str::to_owned),
-            steam_path: obj.get("custom_steam_path").and_then(Value::as_str).unwrap_or_default().to_owned(),
+            language: obj
+                .get("language")
+                .and_then(Value::as_str)
+                .map(str::to_owned),
+            steam_path: obj
+                .get("custom_steam_path")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_owned(),
         })
     }
 }
@@ -172,7 +203,10 @@ mod tests {
         let custom =
             TrainerEntry::from_json(&json!({"name": "Old", "app_id": 1999999999u64, "cover_image_path": "", "trainer_path": "/t/old.exe"})).unwrap();
         assert_eq!(custom.id, "lala-1999999999");
-        assert_eq!(custom.steam_app_id, None, "LaLa app_id of custom games was random, not a Steam AppID");
+        assert_eq!(
+            custom.steam_app_id, None,
+            "LaLa app_id of custom games was random, not a Steam AppID"
+        );
         assert!(TrainerEntry::from_json(&json!({"name": "Online", "app_id": 1245620, "cover_image_url": "https://x", "trainers": []})).is_none());
     }
 
@@ -180,7 +214,10 @@ mod tests {
     fn new_id_is_random_hex() {
         let id = TrainerEntry::new_id();
         assert_eq!(id.len(), 16);
-        assert!(id.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase()));
+        assert!(
+            id.chars()
+                .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase())
+        );
         assert_ne!(TrainerEntry::new_id(), TrainerEntry::new_id());
     }
 
@@ -197,7 +234,10 @@ mod tests {
         assert_eq!(lib.len(), 2);
         assert_eq!(lib[0].steam_app_id, None, "0 is not a valid AppID");
         assert_eq!(lib[0].cover_image_path, "");
-        assert!(lib[1].id.starts_with("lala-"), "missing id gets a generated one");
+        assert!(
+            lib[1].id.starts_with("lala-"),
+            "missing id gets a generated one"
+        );
         assert_eq!(lib[1].steam_app_id, None);
         assert!(library_from_json(&json!({"not": "a list"})).is_none());
     }

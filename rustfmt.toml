@@ -1,0 +1,2 @@
+# Same edition as Cargo.toml, so editors that run rustfmt directly format like `cargo fmt`.
+edition = "2024"

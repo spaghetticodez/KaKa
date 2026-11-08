@@ -1,0 +1,93 @@
+# KaKa UI strings (de). Placeholders: { $name }. Converted from the Flutter ARB files.
+
+title = KaKa Trainer Starter
+launch = Starten
+libraryEmpty =
+    Noch keine Trainer.
+    Klicke auf +, um einen Trainer (.exe) für eines deiner Spiele hinzuzufügen.
+addTrainer = Trainer hinzufügen
+editTrainer = Trainer bearbeiten
+edit = Bearbeiten
+gameName = Spielname
+trainerFile = Trainer (.exe)
+gameCover = Coverbild (optional)
+steamAppId = Steam-AppID (optional)
+steamAppIdHelp = Nur nötig, wenn mehrere Spiele gleichzeitig laufen: wählt das richtige aus.
+select = Auswählen
+change = Ändern
+save = Speichern
+cancel = Abbrechen
+remove = Entfernen
+removeTrainerConfirm =
+    "{ $name }" aus der Bibliothek entfernen?
+
+    Die Trainer-Datei selbst wird nicht gelöscht.
+trainerAdded = Trainer hinzugefügt
+trainerUpdated = Trainer aktualisiert
+requiredFields = Spielname und Trainer-Datei sind erforderlich.
+invalidAppId = Die Steam-AppID muss eine positive Zahl sein.
+setting = Einstellungen
+language = Sprache
+steamPath = Steam-Pfad
+steamPathAuto = Automatisch
+set = Festlegen
+reset = Zurücksetzen
+steamPathSet = Steam-Pfad festgelegt
+ok = OK
+launchFail = Start fehlgeschlagen
+launched = Trainer gestartet: { $name }
+trainerPathNotFound =
+    Trainer-Datei nicht gefunden.
+
+    Pfad: { $trainerPath }
+gameNotRunning =
+    Kein laufendes Proton-Spiel gefunden.
+
+    Starte zuerst das Spiel (Steam, Heroic, Lutris oder ein anderer Proton-Launcher) und dann den Trainer.
+multipleGamesRunning =
+    Mehrere Proton-Spiele laufen:
+
+    { $games }
+
+    Lege die Steam-AppID für diesen Trainer fest, um eines auszuwählen.
+gameStarting =
+    Das Spiel startet noch (das Proton-Präfix ist noch nicht bereit).
+
+    Versuche es in ein paar Sekunden erneut.
+protonPathNotFound =
+    Proton-Installation für dieses Spiel nicht gefunden.
+
+    Präfix: { $prefix }
+trainerExited =
+    Der Trainer wurde sofort beendet (Exit-Code { $code }).
+
+    { $output }
+
+    Vollständiges Protokoll: { $logPath }
+sourceCode = Quellcode
+basedOn = Basiert auf LaLa
+openLog = Protokoll öffnen
+trainerLogs = Trainer-Protokolle
+openFolder = Ordner öffnen
+resetTrainerData = Trainer-Daten zurücksetzen
+resetTrainerDataConfirm =
+    Für FLiNG-Trainer, die "previous trainer instance did not exit properly" melden.
+
+    Schließe zuerst Spiel und Trainer. KaKa löscht dann den Ordner FLiNGTrainer und leert den Temp-Ordner im Präfix des Spiels:
+
+    { $paths }
+
+    Sonst wird nichts verändert.
+resetTrainerDataDone = Trainer-Daten zurückgesetzt ({ $count } Einträge entfernt)
+prefixInUse = Im Präfix laufen noch das Spiel oder ein Trainer. Schließe sie und versuche es erneut.
+cleanupOutsidePrefix = Nicht zurückgesetzt: Der AppData-Ordner dieses Präfixes zeigt aus dem Präfix heraus.
+running = Läuft
+stop = Beenden
+trainerAlreadyRunning = { $name } läuft bereits.
+trainerStopped = Trainer beendet: { $name }
+trainerStopFailed = { $name } wurde noch nicht beendet. Schließe ihn über sein eigenes Fenster.
+useRunningGame = Laufendes Spiel übernehmen
+chooseGame = Welches Spiel?
+quit = Beenden
+about = Über KaKa
+moreActions = Weitere Aktionen

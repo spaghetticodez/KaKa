@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="image/kaka.png" width="120" alt="KaKa logo">
+  <img src="data/icons/io.github.spaghetticodez.kaka.png" width="120" alt="KaKa logo">
   <h1>KaKa Trainer Launcher</h1>
   <p>Run your own Windows game trainers inside the Proton prefix of the game you are playing — on Linux.</p>
 </div>
@@ -8,13 +8,16 @@ KaKa is a **Linux-only, offline** fork of [LaLa Trainers Launcher](https://githu
 It has no online catalogue, no update checks and no telemetry: you add trainer `.exe` files you
 already have, KaKa finds the running Proton game and starts the trainer in the same Wine prefix.
 
+Since 2.0 KaKa is a native GTK4 / libadwaita app written in Rust (1.x was Flutter). Your library and
+settings carry over unchanged.
+
 ## How it works
 
 1. Start your game (Steam, Heroic, Lutris, umu-launcher — anything that runs it with Proton).
 2. In KaKa, click **+**, pick the trainer `.exe`, and click **Use running game**: KaKa fills in the game's
    name, Steam AppID and cover from local Steam data (the game's `appmanifest_*.acf` and Steam's artwork
    cache; nothing is downloaded). You can also type a name and pick a cover yourself.
-3. Click the trainer card. KaKa:
+3. Click **Launch** on the trainer's card (or its cover). KaKa:
    - finds the running game through its `STEAM_COMPAT_DATA_PATH` (works for any library drive and
      non-Steam shortcuts),
    - uses the same Proton build the game was started with (or the one recorded in the prefix's `config_info`),
@@ -22,6 +25,7 @@ already have, KaKa finds the running Proton game and starts the trainer in the s
      wineserver — also when Steam runs the game inside the Steam Linux Runtime container), from the
      trainer's own folder. Older Proton builds without `runinprefix` fall back to `proton run`,
    - writes a log to `~/.local/state/kaka/logs/` and shows the error output if the trainer exits immediately.
+4. A running trainer shows a **Running** badge; **Stop** ends it (only that trainer — the game keeps running).
 
 **Steam AppID (optional, per trainer)** — only needed when several Proton games run at once; KaKa then
 picks the game with that AppID. See [how to find the AppID](docs/how_to_get_appid.md).
@@ -32,21 +36,36 @@ trainer closes. KaKa therefore refuses to launch a trainer when its game is not 
 
 When KaKa is closed, it stops the trainers it started (only those — the game and its Wine services keep running).
 
-## Build
+## Build and install
 
-Requires the Flutter version pinned in [`.fvmrc`](.fvmrc) and the usual Linux desktop toolchain
-(`clang cmake ninja pkgconf gtk3`, plus X11/Xi headers for `window_manager`'s native core).
+Needs Rust (via [rustup](https://rustup.rs); the toolchain is pinned in `rust-toolchain.toml`), a C
+toolchain with pkg-config, and the GTK 4.14+ / libadwaita 1.5+ development files:
+
+| Distribution | Packages |
+|---|---|
+| Arch | `base-devel gtk4 libadwaita` |
+| Debian 13 / Ubuntu 24.04+ | `build-essential pkg-config libgtk-4-dev libadwaita-1-dev` |
+| Fedora | `gcc pkgconf-pkg-config gtk4-devel libadwaita-devel` |
 
 ```sh
-flutter pub get
-flutter analyze
-flutter test
-flutter build linux --release
-./build/linux/x64/release/bundle/kaka
+cargo build --release --locked
+./target/release/kaka
 ```
 
-Packaging (AppImage / Flatpak / Arch package) is not decided yet; the files in `dist/` are legacy
-LaLa recipes and are not maintained.
+Install for your user (menu entry and icon included):
+
+```sh
+install -Dm755 target/release/kaka ~/.local/bin/kaka
+install -Dm644 data/io.github.spaghetticodez.kaka.desktop ~/.local/share/applications/io.github.spaghetticodez.kaka.desktop
+install -Dm644 data/icons/io.github.spaghetticodez.kaka.svg ~/.local/share/icons/hicolor/scalable/apps/io.github.spaghetticodez.kaka.svg
+```
+
+The menu entry runs `kaka` from `PATH`. If your desktop session does not have `~/.local/bin` on its
+`PATH`, point the entry at the binary instead:
+`sed -i "s|^Exec=kaka$|Exec=$HOME/.local/bin/kaka|" ~/.local/share/applications/io.github.spaghetticodez.kaka.desktop`.
+
+Packaging (Arch package / AppImage) is not decided yet. A Flatpak is not planned: its sandbox cannot
+see or join the running game's processes.
 
 ## Data
 
@@ -70,8 +89,8 @@ are imported once. LaLa online-catalogue entries are skipped. The LaLa files are
   Debian, Flatpak and Snap Steam locations automatically.
 - **Some trainers will not start** — often a .NET issue in the prefix, see [reinstalling dotnet40](docs/reinstall_dotnet40.md).
 - **Trainer window flickers** — Wayland issue; use X11 or [enable a Wine virtual desktop](docs/enable_virtual_desktop.md).
-- **"Previous instance did not exit properly"** (FLiNG trainers) — close the game and the trainer, hover the
-  trainer's card and click **Reset trainer data** (shown once the trainer has run). KaKa deletes
+- **"Previous instance did not exit properly"** (FLiNG trainers) — close the game and the trainer, open the
+  card's **⋮** menu and choose **Reset trainer data** (shown once the trainer has run). KaKa deletes
   `AppData/Local/FLiNGTrainer/` and empties `AppData/Local/Temp/` in the prefix the trainer last ran in,
   after showing the exact paths, and refuses while anything still runs in that prefix.
   Do not delete Proton's `pfx.lock` for this; it is a lock, not a stale marker.

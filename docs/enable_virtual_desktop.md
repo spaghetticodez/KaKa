@@ -11,7 +11,7 @@ WINEPREFIX=~/.steam/steam/steamapps/compatdata/{APPID}/pfx winecfg
 Navigate to the **Graphics** tab.  
 Check the "**Emulate a virtual desktop**" option and select your preferred desktop size.  
 Click **Apply**.  
-![virtual desktop](../image/virtual_desktop.png)
+![virtual desktop](images/virtual_desktop.png)
 ## Step 4: Restart the Game and Trainer
 After enabling virtual desktop, restart the game and trainer.  
 You should now be able to launch them successfully.

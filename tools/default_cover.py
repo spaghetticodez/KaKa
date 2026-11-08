@@ -3,7 +3,8 @@
 
 Retro synthwave: striped sun, mountains, perspective grid, CRT scanlines and a
 5x7 pixel font drawn as rectangles (no font dependency, fully reproducible).
-Render: rsvg-convert -w 600 -h 900 data/default_game_cover.svg | magick - -quality 90 data/default_game_cover.jpg
+Render (librsvg + ImageMagick 7):
+rsvg-convert -w 600 -h 900 data/default_game_cover.svg | magick - -strip -quality 90 -sampling-factor 4:4:4 data/default_game_cover.jpg
 """
 import random
 from pathlib import Path

@@ -38,14 +38,14 @@ When KaKa is closed, it stops the trainers it started (only those — the game a
 
 ## Build and install
 
-Needs Rust (via [rustup](https://rustup.rs); the toolchain is pinned in `rust-toolchain.toml`) and the
-GTK 4.14+ / libadwaita 1.5+ development files:
+Needs Rust (via [rustup](https://rustup.rs); the toolchain is pinned in `rust-toolchain.toml`), a C
+toolchain with pkg-config, and the GTK 4.14+ / libadwaita 1.5+ development files:
 
 | Distribution | Packages |
 |---|---|
-| Arch | `gtk4 libadwaita` |
-| Debian 13 / Ubuntu 24.04+ | `libgtk-4-dev libadwaita-1-dev` |
-| Fedora | `gtk4-devel libadwaita-devel` |
+| Arch | `base-devel gtk4 libadwaita` |
+| Debian 13 / Ubuntu 24.04+ | `build-essential pkg-config libgtk-4-dev libadwaita-1-dev` |
+| Fedora | `gcc pkgconf-pkg-config gtk4-devel libadwaita-devel` |
 
 ```sh
 cargo build --release --locked
@@ -59,6 +59,10 @@ install -Dm755 target/release/kaka ~/.local/bin/kaka
 install -Dm644 data/io.github.spaghetticodez.kaka.desktop ~/.local/share/applications/io.github.spaghetticodez.kaka.desktop
 install -Dm644 data/icons/io.github.spaghetticodez.kaka.svg ~/.local/share/icons/hicolor/scalable/apps/io.github.spaghetticodez.kaka.svg
 ```
+
+The menu entry runs `kaka` from `PATH`. If your desktop session does not have `~/.local/bin` on its
+`PATH`, point the entry at the binary instead:
+`sed -i "s|^Exec=kaka$|Exec=$HOME/.local/bin/kaka|" ~/.local/share/applications/io.github.spaghetticodez.kaka.desktop`.
 
 Packaging (Arch package / AppImage) is not decided yet. A Flatpak is not planned: its sandbox cannot
 see or join the running game's processes.

@@ -16,8 +16,8 @@ use kaka_core::trainer_data::{CleanupError, TrainerDataCleanup};
 
 use crate::{dialogs, i18n, settings, tr, trainer_dialog};
 
-const DEFAULT_COVER: &[u8] = include_bytes!("../../../image/default_game_cover.jpg");
-const LOGO: &[u8] = include_bytes!("../../../image/kaka.png");
+const DEFAULT_COVER: &[u8] = include_bytes!("../../../data/default_game_cover.jpg");
+const LOGO: &[u8] = include_bytes!("../../../data/icons/io.github.spaghetticodez.kaka.png");
 const ORPHAN_POLL_SECONDS: u32 = 5;
 const STOP_TIMEOUT: Duration = Duration::from_secs(5);
 

@@ -9,34 +9,8 @@ permissions:
   contents: read
 
 jobs:
+  # Ubuntu 24.04 is the supported floor: GTK 4.14, libadwaita 1.5.
   linux:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-      - uses: kuhnroyal/flutter-fvm-config-action/config@v3
-        id: fvm-config-action
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
-          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
-      - run: |
-          sudo apt-get update -y
-          sudo apt-get install -y ninja-build libgtk-3-dev libx11-dev libxi-dev
-      - run: flutter --disable-analytics
-      - run: flutter pub get
-      - run: flutter analyze
-      - run: flutter test
-      - run: flutter build linux --release --target-platform=linux-x64
-      - uses: actions/upload-artifact@v7
-        with:
-          name: kaka_linux_x64_bundle
-          path: build/linux/x64/release/bundle
-          retention-days: 14
-
-  # Rust port (crates/). Ubuntu 24.04 is the supported floor: GTK 4.14, libadwaita 1.5.
-  rust:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
@@ -54,6 +28,9 @@ jobs:
       - run: cargo build --release --locked -p kaka
       - uses: actions/upload-artifact@v7
         with:
-          name: kaka_rust_linux_x64
-          path: target/release/kaka
+          name: kaka_linux_x64
+          path: |
+            target/release/kaka
+            data/io.github.spaghetticodez.kaka.desktop
+            data/icons/io.github.spaghetticodez.kaka.svg
           retention-days: 14

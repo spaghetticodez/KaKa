@@ -49,7 +49,7 @@ Future<void> main() async {
 
   runApp(KaKaApp(controller: controller, onQuit: quit));
   await controller.load();
-  controller.startMonitoring();
+  unawaited(controller.startMonitoring());
 }
 
 class KaKaApp extends StatelessWidget {
@@ -134,12 +134,13 @@ class HomePage extends StatelessWidget {
 
     String message;
     try {
-      message = l10n.resetTrainerDataDone(controller.resetTrainerData(entry));
+      message = l10n.resetTrainerDataDone(await controller.resetTrainerData(entry));
     } on CleanupRefused catch (e) {
       message = e.reason == CleanupRefusal.prefixInUse ? l10n.prefixInUse : l10n.cleanupOutsidePrefix;
     } on FileSystemException catch (e) {
       message = e.toString();
     }
+    if (!context.mounted) return;
     showSnakeBar(context: context, message: message, time: 4);
   }
 

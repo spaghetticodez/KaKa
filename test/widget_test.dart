@@ -36,6 +36,8 @@ void main() {
         opened.add(uri);
         return true;
       },
+      // A real scan runs in an isolate, which never completes under the widget test's fake clock.
+      processes: () async => [],
     );
   });
 
@@ -132,7 +134,7 @@ void main() {
     final compat = p.join(tmp.path, 'compatdata', '7');
     final fling = Directory(p.join(compat, 'pfx', 'drive_c', 'users', 'steamuser', 'AppData', 'Local', 'FLiNGTrainer'))..createSync(recursive: true);
     storage.library = [trainer('a', path: exe, lastPrefix: compat), trainer('b', path: exe)];
-    controller = LibraryController(storage: storage, launcher: launcher, processes: () => []);
+    controller = LibraryController(storage: storage, launcher: launcher, processes: () async => []);
     await pumpApp(tester);
 
     await hoverCard(tester, 'b');
@@ -154,7 +156,7 @@ void main() {
   testWidgets('a running trainer shows a badge and a Stop button, and is not launched twice', (tester) async {
     launcher.live.add('a');
     await pumpApp(tester);
-    controller.refreshRunning();
+    launcher.emit();
     await tester.pump();
     expect(find.text(l10n.running), findsOneWidget, reason: 'badge is visible without hovering');
 
@@ -191,7 +193,7 @@ void main() {
         r'Z:\games\eldenring.exe'
       ]),
     ];
-    controller = LibraryController(storage: storage, launcher: launcher, processes: () => procs);
+    controller = LibraryController(storage: storage, launcher: launcher, processes: () async => procs);
     await pumpApp(tester);
 
     await tester.tap(find.byTooltip(l10n.addTrainer));

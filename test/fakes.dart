@@ -1,5 +1,6 @@
 // Test doubles for the UI-facing state: storage kept in memory and a launcher
 // that records launches instead of starting Proton.
+import 'dart:async';
 import 'dart:io';
 
 import 'package:kaka/l10n/app_localizations.dart';
@@ -46,33 +47,64 @@ class FakeLauncher extends TrainerLauncher {
   final List<String> launched = [];
   int stopAllCalls = 0;
 
-  /// Ids with a "live" trainer process. Launch adds, stop removes unless [stubborn].
+  /// Trainers this "session" started whose wrapper still runs (event-driven,
+  /// like the real launcher). Launch adds, stop removes unless [stubborn].
   final Set<String> live = {};
+
+  /// Trainers only a process scan finds (left over from an earlier session).
+  final Set<String> orphanProcs = {};
   bool stubborn = false;
 
+  final StreamController<void> _fakeChanges = StreamController<void>.broadcast(sync: true);
+
+  /// Signals a start/exit, as the real launcher does from the process exit.
+  void emit() => _fakeChanges.add(null);
+
   @override
-  Future<LaunchPlan> launch(TrainerEntry entry, AppLocalizations l10n) async {
+  Stream<void> get changes => _fakeChanges.stream;
+
+  @override
+  Set<String> get liveIds => Set.unmodifiable(live);
+
+  @override
+  Future<LaunchPlan> launch(TrainerEntry entry, AppLocalizations l10n, {List<ProcessInfo>? processes}) async {
     launched.add(entry.id);
     final error = failure;
     if (error != null) throw error;
     live.add(entry.id);
+    emit();
     return LaunchPlan(protonScript: '/proton/proton', compatDataPath: prefix, clientInstallPath: '/steam', verb: 'runinprefix');
   }
 
   @override
   Set<String> runningIds(Iterable<TrainerEntry> entries, Iterable<ProcessInfo> processes) => {
         for (final e in entries)
-          if (live.contains(e.id)) e.id,
+          if (live.contains(e.id) || orphanProcs.contains(e.id)) e.id,
       };
 
   @override
   int stop(TrainerEntry entry, Iterable<ProcessInfo> processes) {
     if (stubborn) return 1;
-    return live.remove(entry.id) ? 1 : 0;
+    final removed = live.remove(entry.id) | orphanProcs.remove(entry.id);
+    if (removed) emit();
+    return removed ? 1 : 0;
   }
 
   @override
   Future<void> stopAll() async => stopAllCalls++;
+}
+
+/// Process scan double that counts how often the controller scans /proc.
+class CountingScan {
+  CountingScan([List<ProcessInfo>? processes]) : processes = processes ?? [];
+
+  List<ProcessInfo> processes;
+  int calls = 0;
+
+  Future<List<ProcessInfo>> call() async {
+    calls++;
+    return processes;
+  }
 }
 
 TrainerEntry trainer(String id, {String? path, int? appId, String lastPrefix = ''}) =>

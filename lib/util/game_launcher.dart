@@ -71,20 +71,33 @@ class TrainerLauncher {
   /// Trainers started in this session (entry id -> trainer path), stopped on exit.
   final Map<String, String> _started = {};
 
+  /// Proton wrapper process per entry id while it runs. `proton run/runinprefix`
+  /// waits for the trainer, so the wrapper's exit is the trainer's exit and
+  /// running state needs no polling.
+  final Map<String, Process> _live = {};
+  final StreamController<void> _changes = StreamController<void>.broadcast();
+
+  /// Fires when a trainer started by this launcher starts or exits.
+  Stream<void> get changes => _changes.stream;
+
+  /// Ids of trainers started by this launcher whose wrapper still runs.
+  Set<String> get liveIds => Set.unmodifiable(_live.keys);
+
   /// Resolves the plan and starts the trainer; returns the plan that was used.
   /// Throws [LaunchException] with a user-facing message on failure.
-  Future<LaunchPlan> launch(TrainerEntry entry, AppLocalizations l10n) async {
-    final plan = resolvePlan(entry, l10n);
+  /// [processes] is a fresh process scan, if the caller already has one.
+  Future<LaunchPlan> launch(TrainerEntry entry, AppLocalizations l10n, {List<ProcessInfo>? processes}) async {
+    final plan = resolvePlan(entry, l10n, processes: processes);
     await start(entry, plan, l10n);
     return plan;
   }
 
   /// Works out which prefix and Proton build to use. Throws [LaunchException]
   /// with a user-facing message when that is impossible.
-  LaunchPlan resolvePlan(TrainerEntry entry, AppLocalizations l10n) {
+  LaunchPlan resolvePlan(TrainerEntry entry, AppLocalizations l10n, {List<ProcessInfo>? processes}) {
     if (!_isFile(entry.trainerPath)) throw LaunchException(l10n.trainerPathNotFound(entry.trainerPath));
 
-    final games = detectRunningGames(readProcesses());
+    final games = detectRunningGames(processes ?? readProcesses());
     final appId = entry.steamAppId;
     // The game must already run. Starting a trainer first does not work with
     // Steam: its 'waitforexitandrun' waits for the prefix's wineserver (kept alive
@@ -165,6 +178,16 @@ class TrainerLauncher {
       rethrow;
     }
     _started[entry.id] = entry.trainerPath;
+    _live[entry.id] = process;
+    _changes.add(null);
+    // On the exit itself, not on closed output pipes: a Wine child that
+    // inherited stdout could keep those open longer.
+    process.exitCode.then((_) {
+      if (identical(_live[entry.id], process)) {
+        _live.remove(entry.id);
+        _changes.add(null);
+      }
+    });
 
     final stdoutDone = process.stdout.listen(sink.add).asFuture<void>();
     final stderrDone = process.stderr.listen(sink.add).asFuture<void>();

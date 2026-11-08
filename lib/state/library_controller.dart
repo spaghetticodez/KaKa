@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -16,30 +17,51 @@ import '../util/trainer_data.dart';
 /// Opens a local file or folder in the desktop's default application.
 typedef UriOpener = Future<bool> Function(Uri uri);
 
+/// Reads the process list in a background isolate, so the ~10-20 ms scan of
+/// /proc never blocks a frame.
+Future<List<ProcessInfo>> scanProcessesInBackground() => Isolate.run(readProcesses);
+
 /// App state: the trainer library and settings. UI-free, so it is unit-testable;
 /// widgets listen to it and call its methods.
 class LibraryController extends ChangeNotifier {
-  LibraryController({required this.storage, required this.launcher, UriOpener? openUri, List<ProcessInfo> Function()? processes})
-      : _openUri = openUri ?? launchUrl,
-        _readProcesses = processes ?? readProcesses;
+  LibraryController({
+    required this.storage,
+    required this.launcher,
+    UriOpener? openUri,
+    Future<List<ProcessInfo>> Function()? processes,
+    this.orphanPollInterval = const Duration(seconds: 5),
+  })  : _openUri = openUri ?? launchUrl,
+        _scan = processes ?? scanProcessesInBackground {
+    _launcherChanges = launcher.changes.listen((_) => notifyListeners());
+  }
 
   final LocalStorage storage;
   final TrainerLauncher launcher;
   final UriOpener _openUri;
-  final List<ProcessInfo> Function() _readProcesses;
+  final Future<List<ProcessInfo>> Function() _scan;
+
+  /// How often trainers left running by an earlier session are re-checked
+  /// (only while there are any).
+  final Duration orphanPollInterval;
 
   List<TrainerEntry> _trainers = [];
   bool _loading = true;
   String _language = languageOptions.first;
-  Set<String> _running = {};
-  Timer? _monitor;
+
+  /// Running trainers this session did not start (found by a scan).
+  Set<String> _orphans = {};
+  Timer? _orphanPoll;
+  late final StreamSubscription<void> _launcherChanges;
+  Future<List<ProcessInfo>>? _pendingScan;
+  bool _disposed = false;
 
   List<TrainerEntry> get trainers => List.unmodifiable(_trainers);
 
   bool get loading => _loading;
 
-  /// Whether the trainer of entry [id] has a live process (refreshed by [refreshRunning]).
-  bool isRunning(String id) => _running.contains(id);
+  /// Whether the trainer of entry [id] runs: started by this session and its
+  /// Proton wrapper still alive (event-driven), or found by the last scan.
+  bool isRunning(String id) => launcher.liveIds.contains(id) || _orphans.contains(id);
 
   /// Display name from [languageOptions].
   String get language => _language;
@@ -94,16 +116,15 @@ class LibraryController extends ChangeNotifier {
   /// the failure with a user-facing message. A trainer that is already running
   /// is not started a second time (FLiNG trainers fail on a second instance).
   Future<LaunchException?> launch(TrainerEntry entry, AppLocalizations l10n) async {
-    refreshRunning();
+    final processes = await rescan();
     if (isRunning(entry.id)) return LaunchException(l10n.trainerAlreadyRunning(entry.name));
     _trainers.removeWhere((e) => e.id == entry.id);
     _trainers.insert(0, entry);
     notifyListeners();
     await _saveLibrary();
     try {
-      final plan = await launcher.launch(entry, l10n);
+      final plan = await launcher.launch(entry, l10n, processes: processes);
       entry.lastPrefix = plan.compatDataPath;
-      _running = {..._running, entry.id};
       notifyListeners();
       await _saveLibrary();
       return null;
@@ -115,43 +136,64 @@ class LibraryController extends ChangeNotifier {
     }
   }
 
-  /// Polls which trainers run, every [interval], until [dispose].
-  void startMonitoring({Duration interval = const Duration(seconds: 2)}) {
-    _monitor ??= Timer.periodic(interval, (_) => refreshRunning());
-    refreshRunning();
+  /// One scan at startup, to show trainers an earlier session left running.
+  /// Trainers started from now on are tracked through their process exit.
+  Future<void> startMonitoring() async {
+    await rescan();
   }
 
-  /// Re-reads the process list; notifies listeners only when the set changed.
-  void refreshRunning() {
-    final now = launcher.runningIds(_trainers, _readProcesses());
-    if (setEquals(now, _running)) return;
-    _running = now;
-    notifyListeners();
+  /// Scans the process list once (in the background) and updates the set of
+  /// running trainers this session did not start. Concurrent calls share one
+  /// scan. Returns the scanned processes.
+  Future<List<ProcessInfo>> rescan() {
+    return _pendingScan ??= () async {
+      try {
+        final processes = await _scan();
+        if (_disposed) return processes;
+        final orphans = launcher.runningIds(_trainers, processes).difference(launcher.liveIds);
+        if (!setEquals(orphans, _orphans)) {
+          _orphans = orphans;
+          notifyListeners();
+        }
+        // Orphans have no exit event to wait for: re-check them, but only while any exist.
+        if (_orphans.isEmpty) {
+          _orphanPoll?.cancel();
+          _orphanPoll = null;
+        } else {
+          _orphanPoll ??= Timer.periodic(orphanPollInterval, (_) => rescan());
+        }
+        return processes;
+      } finally {
+        _pendingScan = null;
+      }
+    }();
   }
 
   /// Stops [entry]'s trainer and waits up to [timeout] for it to exit.
   /// Returns whether it is gone.
   Future<bool> stop(TrainerEntry entry, {Duration timeout = const Duration(seconds: 5)}) async {
-    launcher.stop(entry, _readProcesses());
+    launcher.stop(entry, await _scan());
     final deadline = DateTime.now().add(timeout);
     while (true) {
-      refreshRunning();
+      await rescan();
       if (!isRunning(entry.id)) return true;
       if (DateTime.now().isAfter(deadline)) return false;
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
     }
   }
 
   @override
   void dispose() {
-    _monitor?.cancel();
+    _disposed = true;
+    _orphanPoll?.cancel();
+    _launcherChanges.cancel();
     super.dispose();
   }
 
   /// Proton games running right now, with name, AppID and cover filled in from
   /// local Steam data where available (for "use running game" when adding).
-  List<GameSuggestion> runningGames() {
-    final games = detectRunningGames(_readProcesses());
+  Future<List<GameSuggestion>> runningGames() async {
+    final games = detectRunningGames(await _scan());
     if (games.isEmpty) return const [];
     final root = launcher.steamRoot();
     return [for (final g in games) suggestionFor(g, steamRoot: root)];
@@ -160,10 +202,11 @@ class LibraryController extends ChangeNotifier {
   /// Resets FLiNG trainer state in the prefix [entry] last ran in, see
   /// [TrainerDataCleanup]. Returns the number of removed items. Throws
   /// [CleanupRefused] while anything still runs in that prefix.
-  int resetTrainerData(TrainerEntry entry) {
+  Future<int> resetTrainerData(TrainerEntry entry) async {
     final prefix = entry.lastPrefix;
     if (prefix.isEmpty) return 0;
-    return TrainerDataCleanup(prefix).run(inUse: prefixInUse(_readProcesses(), prefix));
+    final inUse = prefixInUse(await _scan(), prefix);
+    return TrainerDataCleanup(prefix).run(inUse: inUse);
   }
 
   /// Folder with the per-launch trainer logs.

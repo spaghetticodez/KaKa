@@ -16,7 +16,7 @@ class TrainerDialog extends StatefulWidget {
   final TrainerEntry? initial;
 
   /// Running Proton games to fill name, AppID and cover from; null hides the button.
-  final List<GameSuggestion> Function()? detectGames;
+  final Future<List<GameSuggestion>> Function()? detectGames;
 
   @override
   State<TrainerDialog> createState() => _TrainerDialogState();
@@ -55,7 +55,8 @@ class _TrainerDialogState extends State<TrainerDialog> {
   /// Fills name, AppID and cover from a running game (asks which one if several run).
   Future<void> _useRunningGame() async {
     final l10n = AppLocalizations.of(context)!;
-    final games = widget.detectGames!();
+    final games = await widget.detectGames!();
+    if (!mounted) return;
     if (games.isEmpty) {
       setState(() => _error = l10n.gameNotRunning);
       return;

@@ -139,7 +139,21 @@ void main() {
         reason: describe(prefix));
     expect(launcher.runningIds([entry], readProcesses()), {entry.id});
 
-    expect(launcher.stop(entry, readProcesses()), greaterThan(0));
+    // Running state is event-driven: the Proton wrapper KaKa started must live
+    // exactly as long as the trainer. Not shorter...
+    await Future<void>.delayed(const Duration(seconds: 5));
+    expect(wineRunning(prefix, 'FakeTrainer.exe'), isTrue);
+    expect(launcher.liveIds, {entry.id}, reason: 'the wrapper must not exit while the trainer runs');
+
+    // ...and not longer: closing only the trainer's own Wine process (like the
+    // user closing the trainer window) must end the wrapper too.
+    final trainerWine = inPrefix(prefix).where((proc) => proc.env[trainerIdEnv] == entry.id && proc.cmdline.any((a) => a.contains(r'\'))).toList();
+    expect(trainerWine, isNotEmpty, reason: describe(prefix));
+    for (final proc in trainerWine) {
+      Process.killPid(proc.pid, ProcessSignal.sigterm);
+    }
+    expect(await waitFor(() => launcher.liveIds.isEmpty, const Duration(seconds: 20)), isTrue,
+        reason: 'the wrapper outlived its trainer:\n${describe(prefix)}');
     expect(await waitFor(() => !wineRunning(prefix, 'FakeTrainer.exe'), const Duration(seconds: 20)), isTrue);
     expect(launcher.runningIds([entry], readProcesses()), isEmpty);
     expect(wineRunning(prefix, 'FakeGame.exe'), isTrue, reason: 'stopping trainers must not touch the game');

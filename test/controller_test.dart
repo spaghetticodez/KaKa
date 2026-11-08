@@ -17,11 +17,13 @@ void main() {
   late MemoryStorage storage;
   late FakeLauncher launcher;
   late LibraryController controller;
+  late CountingScan scan;
 
   setUp(() async {
     storage = MemoryStorage(library: [trainer('a'), trainer('b')], config: const AppConfig(language: 'German', steamPath: '/steam'));
     launcher = FakeLauncher();
-    controller = LibraryController(storage: storage, launcher: launcher);
+    scan = CountingScan();
+    controller = LibraryController(storage: storage, launcher: launcher, processes: scan.call, orphanPollInterval: const Duration(milliseconds: 20));
     await controller.load();
   });
 
@@ -71,24 +73,24 @@ void main() {
     expect(storage.library.first.lastPrefix, '/compat/1245620');
   });
 
-  test('resetTrainerData refuses while something runs in the prefix, then cleans it', () {
+  test('resetTrainerData refuses while something runs in the prefix, then cleans it', () async {
     final tmp = Directory.systemTemp.createTempSync('kaka_ctl_reset_');
     addTearDown(() => tmp.deleteSync(recursive: true));
     final compat = p.join(tmp.path, 'compatdata', '7');
     final fling = Directory(p.join(compat, 'pfx', 'drive_c', 'users', 'steamuser', 'AppData', 'Local', 'FLiNGTrainer'))..createSync(recursive: true);
-    var running = <ProcessInfo>[
+    final running = CountingScan([
       ProcessInfo(1, {'STEAM_COMPAT_DATA_PATH': compat}, ['game.exe']),
-    ];
-    final c = LibraryController(storage: MemoryStorage(), launcher: FakeLauncher(), processes: () => running);
+    ]);
+    final c = LibraryController(storage: MemoryStorage(), launcher: FakeLauncher(), processes: running.call);
     final entry = trainer('x', lastPrefix: compat);
 
-    expect(() => c.resetTrainerData(entry), throwsA(isA<CleanupRefused>()));
+    await expectLater(c.resetTrainerData(entry), throwsA(isA<CleanupRefused>()));
     expect(fling.existsSync(), isTrue);
 
-    running = [];
-    expect(c.resetTrainerData(entry), 1);
+    running.processes = [];
+    expect(await c.resetTrainerData(entry), 1);
     expect(fling.existsSync(), isFalse);
-    expect(c.resetTrainerData(trainer('never-launched')), 0);
+    expect(await c.resetTrainerData(trainer('never-launched')), 0);
   });
 
   test('a running trainer is not launched twice; stop clears it', () async {
@@ -104,31 +106,64 @@ void main() {
     expect(controller.isRunning(entry.id), isFalse);
   });
 
+  test('the launch guard also catches a trainer only a scan can see', () async {
+    launcher.orphanProcs.add('a');
+    final again = await controller.launch(controller.trainers.first, l10n);
+    expect(again?.message, l10n.trainerAlreadyRunning('Game a'));
+    expect(launcher.launched, isEmpty);
+  });
+
   test('stop gives up after the timeout when the trainer does not exit', () async {
     launcher
       ..live.add('a')
       ..stubborn = true;
-    controller.refreshRunning();
     expect(await controller.stop(controller.trainers.first, timeout: const Duration(milliseconds: 300)), isFalse);
     expect(controller.isRunning('a'), isTrue);
   });
 
-  test('refreshRunning notifies only on change; monitoring polls until dispose', () async {
+  test('idle: one scan at startup, then none while no orphan trainer exists', () async {
+    await controller.startMonitoring();
+    expect(scan.calls, 1);
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    expect(scan.calls, 1, reason: 'no periodic /proc scans when nothing needs them');
+
+    // A trainer this session starts and its exit are events, not scans.
     var notified = 0;
     controller.addListener(() => notified++);
-    controller.refreshRunning();
-    expect(notified, 0);
-
-    controller.startMonitoring(interval: const Duration(milliseconds: 20));
-    launcher.live.add('b');
-    await Future<void>.delayed(const Duration(milliseconds: 80));
+    launcher
+      ..live.add('b')
+      ..emit();
     expect(controller.isRunning('b'), isTrue);
-    expect(notified, 1);
+    launcher
+      ..live.remove('b')
+      ..emit();
+    expect(controller.isRunning('b'), isFalse);
+    expect(notified, 2);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(scan.calls, 1);
+  });
 
+  test('a trainer left by an earlier session is re-checked only until it is gone', () async {
+    launcher.orphanProcs.add('b');
+    await controller.startMonitoring();
+    expect(controller.isRunning('b'), isTrue);
+
+    launcher.orphanProcs.clear();
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(controller.isRunning('b'), isFalse);
+    final callsWhenGone = scan.calls;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(scan.calls, callsWhenGone, reason: 'polling stops with the last orphan');
+  });
+
+  test('dispose stops the orphan re-check and ignores launcher events', () async {
+    launcher.orphanProcs.add('b');
+    await controller.startMonitoring();
     controller.dispose();
-    launcher.live.clear();
-    await Future<void>.delayed(const Duration(milliseconds: 80));
-    expect(controller.isRunning('b'), isTrue, reason: 'no polling after dispose');
+    final calls = scan.calls;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(scan.calls, calls);
+    launcher.emit(); // must not throw "used after being disposed"
   });
 
   test('launch returns the LaunchException, with its log path', () async {

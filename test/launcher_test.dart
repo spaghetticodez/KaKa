@@ -126,15 +126,22 @@ void main() {
   test('a running trainer is found per entry and Stop ends only that one', () async {
     final e = entry('Trainer.exe');
     final twin = TrainerEntry(id: 'twin', name: 'Same exe, other entry', trainerPath: e.trainerPath);
+    final events = <void>[];
+    final sub = launcher.changes.listen(events.add);
+    addTearDown(sub.cancel);
     await launcher.launch(e, l10n);
 
+    expect(launcher.liveIds, {e.id}, reason: 'tracked from its own process, no scan needed');
+    expect(events, hasLength(1));
     expect(launcher.runningIds([e, twin], readProcesses()), {e.id});
 
     expect(launcher.stop(twin, readProcesses()), 0, reason: 'another entry with the same exe matches nothing');
     expect(launcher.stop(e, readProcesses()), greaterThan(0));
-    for (var i = 0; i < 50 && launcher.runningIds([e], readProcesses()).isNotEmpty; i++) {
+    for (var i = 0; i < 50 && launcher.liveIds.isNotEmpty; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
+    expect(launcher.liveIds, isEmpty, reason: 'the exit itself clears the running state');
+    expect(events, hasLength(2));
     expect(launcher.runningIds([e], readProcesses()), isEmpty);
     expect(game.kill(ProcessSignal.sigcont), isTrue, reason: 'the game process must survive stop');
   });

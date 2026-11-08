@@ -298,7 +298,9 @@ impl Launcher {
             .env("STEAM_COMPAT_DATA_PATH", &plan.compat_data_path)
             .env(TRAINER_MARKER_ENV, "1")
             .env(TRAINER_ID_ENV, &entry.id)
-            .stdin(Stdio::null())
+            // An open, never-written stdin pipe for the trainer's lifetime (as the
+            // Flutter build had): console programs exit on stdin EOF.
+            .stdin(Stdio::piped())
             .stdout(stdout)
             .stderr(stderr)
             .spawn()
@@ -331,12 +333,15 @@ impl Launcher {
         thread::Builder::new()
             .name(format!("kaka-watch-{pid}"))
             .spawn(move || {
+                // `Child::wait` closes stdin first; keep the pipe open until the wrapper exits.
+                let stdin = child.stdin.take();
                 let code = match child.wait() {
                     Ok(status) => status
                         .code()
                         .unwrap_or_else(|| -status.signal().unwrap_or(0)),
                     Err(_) => -1,
                 };
+                drop(stdin);
                 let _ = writeln!(log, "# exit code {code}");
                 let handler = {
                     let mut shared = lock(&shared);

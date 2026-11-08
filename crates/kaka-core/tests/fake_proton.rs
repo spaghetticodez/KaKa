@@ -30,6 +30,11 @@ if [ "$(basename "$2")" = "Crash.exe" ]; then
   echo "err: boom" >&2
   exit 3
 fi
+if [ "$(basename "$2")" = "Console.exe" ]; then
+  # Like Wine's cmd.exe: a console program that ends at stdin EOF.
+  cat > /dev/null
+  exit 0
+fi
 sleep 60 &
 trap 'kill $!; exit 0' TERM
 wait
@@ -96,6 +101,7 @@ fn fixture() -> Fixture {
     fs::create_dir_all(&trainers).unwrap();
     fs::write(trainers.join("Trainer.exe"), "MZ").unwrap();
     fs::write(trainers.join("Crash.exe"), "MZ").unwrap();
+    fs::write(trainers.join("Console.exe"), "MZ").unwrap();
 
     let prefix = prefix.to_string_lossy().into_owned();
     let game = Command::new("bash")
@@ -282,6 +288,17 @@ fn a_running_trainer_is_found_per_entry_and_stop_ends_only_that_one() {
     );
     assert!(f.launcher.running_ids(&[e], &scan_processes()).is_empty());
     assert!(f.game_alive(), "the game process must survive stop");
+}
+
+#[test]
+fn a_console_trainer_keeps_running_its_stdin_stays_open_until_it_exits() {
+    let f = fixture();
+    let e = f.entry("Console.exe", Some(FAKE_APP_ID));
+    f.launcher.launch(&e, &scan_processes()).unwrap();
+    assert!(trainer_alive("Console.exe"), "stdin EOF ended the trainer");
+    assert_eq!(f.launcher.live_ids(), [e.id.clone()].into());
+    f.launcher.stop_all();
+    assert!(wait_until(|| f.launcher.live_ids().is_empty()));
 }
 
 #[test]

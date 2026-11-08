@@ -22,6 +22,7 @@ jobs:
       contents: write
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -48,7 +49,7 @@ jobs:
           install -m755 target/release/kaka "dist/$name/kaka"
           install -m644 "data/$app_id.desktop" "data/icons/$app_id.svg" README.md LICENSE "dist/$name/"
           # install.sh from the default branch: tags older than the packaging files lack it.
-          git show origin/HEAD:packaging/install.sh > "dist/$name/install.sh"
+          git show "origin/$DEFAULT_BRANCH:packaging/install.sh" > "dist/$name/install.sh"
           chmod 755 "dist/$name/install.sh"
           tar -C dist -czf "dist/$name.tar.gz" "$name"
           (cd dist && sha256sum "$name.tar.gz" > "$name.tar.gz.sha256")

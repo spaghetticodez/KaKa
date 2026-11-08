@@ -39,7 +39,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get steamAppId => 'Steam AppID (optional)';
 
   @override
-  String get steamAppIdHelp => 'Only needed when several games run at once, or to start the trainer before the game.';
+  String get steamAppIdHelp => 'Only needed when several games run at once: picks the right one.';
 
   @override
   String get select => 'Select';
@@ -112,7 +112,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gameNotRunning =>
-      'No running Proton game found.\n\nStart the game first (Steam, Heroic, Lutris or another Proton launcher), then launch the trainer.\n\nTo start the trainer before the game, set the Steam AppID on this trainer.';
+      'No running Proton game found.\n\nStart the game first (Steam, Heroic, Lutris or another Proton launcher), then launch the trainer.';
 
   @override
   String multipleGamesRunning(Object games) {
@@ -123,18 +123,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gameStarting => 'The game is still starting (its Proton prefix is not ready yet).\n\nTry again in a few seconds.';
 
   @override
-  String prefixNotFound(Object appId) {
-    return 'Proton prefix for Steam AppID $appId not found.\n\nMake sure the game is installed and has been started with Proton at least once.';
-  }
-
-  @override
   String protonPathNotFound(Object prefix) {
     return 'Proton installation for this game not found.\n\nPrefix: $prefix';
-  }
-
-  @override
-  String steamPathNotFound(Object paths) {
-    return 'Steam installation not found. Set the Steam path in Settings.\n\nChecked:\n$paths';
   }
 
   @override

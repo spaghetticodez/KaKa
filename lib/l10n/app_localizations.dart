@@ -156,7 +156,7 @@ abstract class AppLocalizations {
   /// No description provided for @steamAppIdHelp.
   ///
   /// In en, this message translates to:
-  /// **'Only needed when several games run at once, or to start the trainer before the game.'**
+  /// **'Only needed when several games run at once: picks the right one.'**
   String get steamAppIdHelp;
 
   /// No description provided for @select.
@@ -288,7 +288,7 @@ abstract class AppLocalizations {
   /// No description provided for @gameNotRunning.
   ///
   /// In en, this message translates to:
-  /// **'No running Proton game found.\n\nStart the game first (Steam, Heroic, Lutris or another Proton launcher), then launch the trainer.\n\nTo start the trainer before the game, set the Steam AppID on this trainer.'**
+  /// **'No running Proton game found.\n\nStart the game first (Steam, Heroic, Lutris or another Proton launcher), then launch the trainer.'**
   String get gameNotRunning;
 
   /// No description provided for @multipleGamesRunning.
@@ -303,23 +303,11 @@ abstract class AppLocalizations {
   /// **'The game is still starting (its Proton prefix is not ready yet).\n\nTry again in a few seconds.'**
   String get gameStarting;
 
-  /// No description provided for @prefixNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Proton prefix for Steam AppID {appId} not found.\n\nMake sure the game is installed and has been started with Proton at least once.'**
-  String prefixNotFound(Object appId);
-
   /// No description provided for @protonPathNotFound.
   ///
   /// In en, this message translates to:
   /// **'Proton installation for this game not found.\n\nPrefix: {prefix}'**
   String protonPathNotFound(Object prefix);
-
-  /// No description provided for @steamPathNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Steam installation not found. Set the Steam path in Settings.\n\nChecked:\n{paths}'**
-  String steamPathNotFound(Object paths);
 
   /// No description provided for @trainerExited.
   ///

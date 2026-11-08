@@ -49,6 +49,8 @@ void main() {
     prefix = p.join(tmp.path, 'library', 'steamapps', 'compatdata', '$fakeAppId');
     Directory(p.join(prefix, 'pfx')).createSync(recursive: true);
     File(p.join(prefix, 'pfx', 'system.reg')).writeAsStringSync('WINE REGISTRY Version 2\n');
+    // Proton writes <compatdata>/version last, when the prefix is fully set up.
+    File(p.join(prefix, 'version')).writeAsStringSync('11.0-100\n');
     File(p.join(prefix, 'config_info')).writeAsStringSync('fake-1\n$protonDir/files/share/fonts/\n$protonDir/files/lib/\n');
 
     trainers = Directory(p.join(tmp.path, 'my trainers'))..createSync();
@@ -79,10 +81,16 @@ void main() {
     expect(plan.verb, 'runinprefix');
   });
 
-  test('refuses while a running game is still creating its prefix', () {
-    File(p.join(prefix, 'pfx', 'system.reg')).deleteSync();
+  test('refuses while the game is still setting up its prefix (system.reg present, version missing)', () {
+    File(p.join(prefix, 'version')).deleteSync();
+    expect(File(p.join(prefix, 'pfx', 'system.reg')).existsSync(), isTrue);
     expect(() => resolveLaunchPlan(entry('Trainer.exe'), l10n),
         throwsA(isA<LaunchException>().having((x) => x.message, 'message', l10n.gameStarting)));
+  });
+
+  test('falls back to "run" for a Proton build without runinprefix', () {
+    File(p.join(protonDir, 'proton')).writeAsStringSync(fakeProton.replaceAll('runinprefix', 'oldverb'));
+    expect(resolveLaunchPlan(entry('Trainer.exe'), l10n).verb, 'run');
   });
 
   test('starts the trainer inside the prefix with the marker, then stops it on exit', () async {
@@ -119,8 +127,10 @@ void main() {
     );
   });
 
-  test('missing trainer file and an unknown AppID fail with a clear error', () {
+  test('missing trainer file fails clearly; a bound game that is not running is never started into', () {
     expect(() => resolveLaunchPlan(entry('Missing.exe'), l10n), throwsA(isA<LaunchException>()));
-    expect(() => resolveLaunchPlan(entry('Trainer.exe', appId: 1), l10n), throwsA(isA<LaunchException>()));
+    // Starting a trainer before the game would make Steam's waitforexitandrun hang the game.
+    expect(() => resolveLaunchPlan(entry('Trainer.exe', appId: 1), l10n),
+        throwsA(isA<LaunchException>().having((x) => x.message, 'message', l10n.gameNotRunning)));
   });
 }

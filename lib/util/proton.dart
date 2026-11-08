@@ -7,7 +7,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:vdf/vdf.dart';
 
 /// Environment marker set on every trainer KaKa starts. It keeps trainers out
 /// of game detection and lets KaKa stop exactly the processes it started.
@@ -200,45 +199,14 @@ String? findSteamRoot(String home, {String? override, required bool Function(Str
   return null;
 }
 
-/// Library folder paths from `steamapps/libraryfolders.vdf`. Tolerates entries
-/// without an `apps` block, the legacy `"1" "/path"` format and garbage input.
-List<String> libraryPaths(String vdfContent) {
-  try {
-    final decoded = vdf.decode(vdfContent);
-    final folders = decoded['libraryfolders'] ?? decoded['LibraryFolders'];
-    if (folders is! Map) return [];
-    final paths = <String>[];
-    for (final value in folders.values) {
-      if (value is Map && value['path'] is String) {
-        paths.add(value['path'] as String);
-      } else if (value is String && value.startsWith('/')) {
-        paths.add(value);
-      }
-    }
-    return paths;
-  } catch (_) {
-    return [];
-  }
-}
-
-/// `<library>/steamapps/compatdata/<appId>` in the first library that has it.
-String? findPrefix(int appId, List<String> libraries, bool Function(String path) dirExists) {
-  for (final library in libraries) {
-    final candidate = p.join(library, 'steamapps', 'compatdata', '$appId');
-    if (dirExists(candidate)) return candidate;
-  }
-  return null;
-}
-
-/// Chooses the Proton verb used to start a trainer.
+/// Chooses the Proton verb used to start a trainer next to a running game.
 ///
 /// `run` goes through Proton's `steam.exe` helper. With GE-Proton 11 and Proton
 /// Experimental 11 (tested without a running Steam client) that helper did not start a
 /// second program while the game's own `steam.exe` ran in the same prefix: the trainer
 /// never appeared.
 /// `runinprefix` runs the exe with Wine directly and joins the game's wineserver,
-/// also when the game runs inside the Steam Linux Runtime container. It skips prefix
-/// creation/upgrade, so it is only used for an initialised prefix and for Proton
-/// builds that know the verb.
-String trainerVerb({required String protonScript, required bool prefixInitialised}) =>
-    prefixInitialised && protonScript.contains('"runinprefix"') ? 'runinprefix' : 'run';
+/// also when the game runs inside the Steam Linux Runtime container. It needs an
+/// already set-up prefix (callers ensure the game finished setting it up) and a
+/// Proton build that knows the verb; older builds fall back to `run`.
+String trainerVerb({required String protonScript}) => protonScript.contains('"runinprefix"') ? 'runinprefix' : 'run';

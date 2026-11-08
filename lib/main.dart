@@ -156,14 +156,19 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
   void onWindowClose() async {
     if (_closing || !await windowManager.isPreventClose()) return;
     _closing = true;
-    await _saveConfig();
-    await _saveLibrary();
-    await stopAllTrainers();
-    // Leave directly instead of windowManager.destroy(): on X11 the Flutter
-    // Linux embedder aborts while disposing its GL framebuffer during window
-    // teardown (no current GL context; upstream LaLa issue #80). Everything
-    // is saved at this point, so there is nothing left to tear down.
-    exit(0);
+    try {
+      await _saveConfig();
+      await _saveLibrary();
+      await stopAllTrainers();
+    } catch (e) {
+      debugPrint('Shutdown cleanup failed: $e');
+    } finally {
+      // Leave directly instead of windowManager.destroy(): on X11 the Flutter
+      // Linux embedder aborts while disposing its GL framebuffer during window
+      // teardown (no current GL context; upstream LaLa issue #80). Always exit,
+      // so a failed save cannot leave a window that ignores every close.
+      exit(0);
+    }
   }
 
   Widget _appBarButton(IconData icon, String tooltip, VoidCallback onPressed) {

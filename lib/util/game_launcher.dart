@@ -75,9 +75,12 @@ LaunchPlan resolveLaunchPlan(TrainerEntry entry, AppLocalizations l10n) {
 
   final games = detectRunningGames(readProcesses());
   final appId = entry.steamAppId;
-  RunningGame? game;
+  // The game must already run. Starting a trainer first does not work with
+  // Steam: its 'waitforexitandrun' waits for the prefix's wineserver (kept alive
+  // by the trainer) to exit, so the game would hang until the trainer closes.
+  final RunningGame game;
   if (appId != null) {
-    game = matchGame(games, appId);
+    game = matchGame(games, appId) ?? (throw LaunchException(l10n.gameNotRunning));
   } else if (games.length == 1) {
     game = games.single;
   } else if (games.length > 1) {
@@ -86,48 +89,36 @@ LaunchPlan resolveLaunchPlan(TrainerEntry entry, AppLocalizations l10n) {
     throw LaunchException(l10n.gameNotRunning);
   }
 
-  String? steamRoot() {
-    final root = findSteamRoot(_home, override: customSteamPath, dirExists: _dirExists);
-    return root == null ? null : _resolve(root);
-  }
+  // Prefer what the game's own launcher exported: always the right drive and Steam root.
+  final prefix = game.compatDataPath;
+  final client = game.clientInstallPath ?? _steamRoot() ?? '';
 
-  final String prefix;
-  final String client;
-  if (game != null) {
-    // Prefer what the game's own launcher exported: always the right drive and Steam root.
-    prefix = game.compatDataPath;
-    client = game.clientInstallPath ?? steamRoot() ?? '';
-  } else {
-    // Bound to an AppID whose game is not running: locate its prefix in the Steam libraries.
-    final root = steamRoot();
-    if (root == null) throw LaunchException(l10n.steamPathNotFound(steamRootCandidates(_home, override: customSteamPath).join('\n')));
-    final vdfFile = File(p.join(root, 'steamapps', 'libraryfolders.vdf'));
-    final libraries = [root, if (vdfFile.existsSync()) ...libraryPaths(vdfFile.readAsStringSync())];
-    final found = findPrefix(appId!, libraries, _dirExists);
-    if (found == null) throw LaunchException(l10n.prefixNotFound(appId));
-    prefix = found;
-    client = root;
-  }
-
-  var proton = game?.protonScript;
+  var proton = game.protonScript;
   if (proton == null || !_isFile(proton)) {
     final configInfo = File(p.join(prefix, 'config_info'));
     final dir = configInfo.existsSync() ? protonDirFromConfigInfo(configInfo.readAsStringSync(), _isFile) : null;
     if (dir == null) throw LaunchException(l10n.protonPathNotFound(prefix));
     proton = p.join(dir, 'proton');
   }
+
+  // Proton writes <compatdata>/version as the last step of prefix setup (under
+  // pfx.lock) and deletes it before an upgrade; pfx/system.reg appears much
+  // earlier. Without it the game is still setting up the prefix, and a second
+  // Proton instance racing into it could break it.
+  if (!_isFile(p.join(prefix, 'version'))) throw LaunchException(l10n.gameStarting);
+
   String script;
   try {
     script = File(proton).readAsStringSync();
   } on FileSystemException {
     script = '';
   }
-  final prefixInitialised = _isFile(p.join(prefix, 'pfx', 'system.reg'));
-  // A running game whose prefix is not initialised yet is still creating it; a
-  // second Proton instance racing into the same prefix could break it.
-  if (game != null && !prefixInitialised) throw LaunchException(l10n.gameStarting);
-  final verb = trainerVerb(protonScript: script, prefixInitialised: prefixInitialised);
-  return LaunchPlan(protonScript: proton, compatDataPath: prefix, clientInstallPath: client, verb: verb);
+  return LaunchPlan(protonScript: proton, compatDataPath: prefix, clientInstallPath: client, verb: trainerVerb(protonScript: script));
+}
+
+String? _steamRoot() {
+  final root = findSteamRoot(_home, override: customSteamPath, dirExists: _dirExists);
+  return root == null ? null : _resolve(root);
 }
 
 /// Starts the trainer through Proton and watches it for [watch]. Throws

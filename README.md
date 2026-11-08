@@ -18,12 +18,15 @@ already have, KaKa finds the running Proton game and starts the trainer in the s
    - uses the same Proton build the game was started with (or the one recorded in the prefix's `config_info`),
    - runs the trainer with `proton runinprefix` (Wine directly in the game's prefix, joining the game's
      wineserver — also when Steam runs the game inside the Steam Linux Runtime container), from the
-     trainer's own folder. `proton run` is only used for a prefix that does not exist yet,
+     trainer's own folder. Older Proton builds without `runinprefix` fall back to `proton run`,
    - writes a log to `~/.local/state/kaka/logs/` and shows the error output if the trainer exits immediately.
 
-**Steam AppID (optional, per trainer)** — set it when several Proton games run at once, or when you
-want to start the trainer *before* the game (KaKa then looks up `steamapps/compatdata/<AppID>` in all
-your Steam libraries). See [how to find the AppID](docs/how_to_get_appid.md).
+**Steam AppID (optional, per trainer)** — only needed when several Proton games run at once; KaKa then
+picks the game with that AppID. See [how to find the AppID](docs/how_to_get_appid.md).
+
+Always start the game first. A trainer started before the game keeps the prefix's Wine server alive,
+and Steam waits for that server to exit before it starts the game — the game would hang until the
+trainer closes. KaKa therefore refuses to launch a trainer when its game is not running.
 
 When KaKa is closed, it stops the trainers it started (only those — the game and its Wine services keep running).
 
@@ -58,9 +61,11 @@ are imported once. LaLa online-catalogue entries are skipped. The LaLa files are
 - **"No running Proton game found"** — start the game first and [make sure it uses Proton](docs/enable_proton.md).
 - **Trainer says "game not detected"** — the trainer probably does not match the game version.
   Try a trainer build for your game version.
-- **Steam not found** (only needed when starting a trainer before the game) — set the Steam folder
-  (the one containing `steamapps/`) in Settings. KaKa checks `~/.steam/root`, `~/.local/share/Steam`,
-  `~/.steam/steam`, Debian, Flatpak and Snap Steam locations automatically.
+- **"The game is still starting"** — the game is still setting up its Proton prefix (first start or after a
+  Proton update). Wait a few seconds and launch again.
+- **Steam path in Settings** — normally leave it on auto-detect. It is only used when the game's launcher
+  did not tell KaKa where Steam is; KaKa checks `~/.steam/root`, `~/.local/share/Steam`, `~/.steam/steam`,
+  Debian, Flatpak and Snap Steam locations automatically.
 - **Some trainers will not start** — often a .NET issue in the prefix, see [reinstalling dotnet40](docs/reinstall_dotnet40.md).
 - **Trainer window flickers** — Wayland issue; use X11 or [enable a Wine virtual desktop](docs/enable_virtual_desktop.md).
 - **"Previous instance did not exit properly"** (FLiNG trainers) — delete the trainer's temp folders in the

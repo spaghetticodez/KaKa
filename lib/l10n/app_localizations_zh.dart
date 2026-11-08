@@ -39,7 +39,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get steamAppId => 'Steam AppID（可选）';
 
   @override
-  String get steamAppIdHelp => '仅在同时运行多个游戏，或需要在游戏之前启动修改器时需要。';
+  String get steamAppIdHelp => '仅在同时运行多个游戏时需要：用于选择正确的游戏。';
 
   @override
   String get select => '选择';
@@ -111,7 +111,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get gameNotRunning => '未找到正在运行的 Proton 游戏。\n\n请先启动游戏（Steam、Heroic、Lutris 或其他 Proton 启动器），再启动修改器。\n\n如需在游戏之前启动修改器，请为该修改器设置 Steam AppID。';
+  String get gameNotRunning => '未找到正在运行的 Proton 游戏。\n\n请先启动游戏（Steam、Heroic、Lutris 或其他 Proton 启动器），再启动修改器。';
 
   @override
   String multipleGamesRunning(Object games) {
@@ -122,18 +122,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get gameStarting => '游戏仍在启动中（其 Proton 前缀尚未就绪）。\n\n请几秒后再试。';
 
   @override
-  String prefixNotFound(Object appId) {
-    return '未找到 Steam AppID $appId 的 Proton 前缀。\n\n请确认游戏已安装，并且至少用 Proton 启动过一次。';
-  }
-
-  @override
   String protonPathNotFound(Object prefix) {
     return '未找到该游戏的 Proton 安装。\n\n前缀：$prefix';
-  }
-
-  @override
-  String steamPathNotFound(Object paths) {
-    return '未找到 Steam 安装。请在设置中指定 Steam 路径。\n\n已检查：\n$paths';
   }
 
   @override

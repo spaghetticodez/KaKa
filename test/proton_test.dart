@@ -121,41 +121,7 @@ void main() {
     });
   });
 
-  group('Steam libraries', () {
-    const vdfNew = '''
-"libraryfolders"
-{
-	"0"
-	{
-		"path"		"/home/u/.local/share/Steam"
-		"apps"
-		{
-			"228980"		"123"
-		}
-	}
-	"1"
-	{
-		"path"		"/mnt/games/SteamLibrary"
-	}
-}
-''';
-
-    test('libraryPaths tolerates folders without an apps block', () {
-      expect(libraryPaths(vdfNew), ['/home/u/.local/share/Steam', '/mnt/games/SteamLibrary']);
-    });
-
-    test('libraryPaths supports the legacy format and garbage input', () {
-      expect(libraryPaths('"LibraryFolders"\n{\n\t"TimeNextStatsReport"\t"1"\n\t"1"\t"/old/lib"\n}\n'), ['/old/lib']);
-      expect(libraryPaths('not a vdf {{{'), isEmpty);
-      expect(libraryPaths(''), isEmpty);
-    });
-
-    test('findPrefix searches every library (games on a second drive, upstream #54/#90)', () {
-      final dirs = {'/mnt/games/SteamLibrary/steamapps/compatdata/1245620'};
-      expect(findPrefix(1245620, libraryPaths(vdfNew), dirs.contains), '/mnt/games/SteamLibrary/steamapps/compatdata/1245620');
-      expect(findPrefix(1, libraryPaths(vdfNew), dirs.contains), isNull);
-    });
-
+  group('Steam root', () {
     test('findSteamRoot: user override wins and is not silently replaced', () {
       final dirs = {'/home/u/.local/share/Steam/steamapps'};
       expect(findSteamRoot('/home/u', dirExists: dirs.contains), '/home/u/.local/share/Steam');
@@ -170,14 +136,10 @@ void main() {
   });
 
   group('trainerVerb', () {
-    const modern = 'elif sys.argv[1] == "runinprefix":';
-    test('runinprefix for an initialised prefix and a Proton build that supports it', () {
-      expect(trainerVerb(protonScript: modern, prefixInitialised: true), 'runinprefix');
-    });
-    test('run for a fresh prefix (runinprefix would not create it) or an old Proton build', () {
-      expect(trainerVerb(protonScript: modern, prefixInitialised: false), 'run');
-      expect(trainerVerb(protonScript: 'if sys.argv[1] == "run":', prefixInitialised: true), 'run');
-      expect(trainerVerb(protonScript: '', prefixInitialised: true), 'run');
+    test('runinprefix when the Proton build supports it, run for older builds', () {
+      expect(trainerVerb(protonScript: 'elif sys.argv[1] == "runinprefix":'), 'runinprefix');
+      expect(trainerVerb(protonScript: 'if sys.argv[1] == "run":'), 'run');
+      expect(trainerVerb(protonScript: ''), 'run');
     });
   });
 

@@ -1,0 +1,50 @@
+# Maintainer: spaghetticodez <81798765+spaghetticodez@users.noreply.github.com>
+# Builds KaKa from the tagged source release. Local build: makepkg -si
+pkgname=kaka
+pkgver=2.0.0
+pkgrel=1
+pkgdesc="Run your own Windows game trainers inside the running game's Proton prefix"
+arch=('x86_64')
+url="https://github.com/spaghetticodez/KaKa"
+license=('AGPL-3.0-only')
+# Libraries the binary links directly (readelf NEEDED), mapped to their packages.
+depends=('gtk4' 'libadwaita' 'pango' 'glib2' 'libgcc' 'glibc')
+makedepends=('cargo')
+# The release profile strips symbols: no separate debug package.
+options=('!debug')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('7e26e9faa659accc865c08e11ad4a1f086dc9b5ad98267b83d0902905d19f8b6')
+
+_srcdir() {
+  echo "$srcdir/KaKa-$pkgver"
+}
+
+prepare() {
+  cd "$(_srcdir)"
+  # Arch Rust guidelines: system stable toolchain instead of the pinned rustup one.
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "$(_srcdir)"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release -p kaka
+}
+
+check() {
+  cd "$(_srcdir)"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo test --frozen --workspace
+}
+
+package() {
+  cd "$(_srcdir)"
+  local app_id=io.github.spaghetticodez.kaka
+  install -Dm755 target/release/kaka "$pkgdir/usr/bin/kaka"
+  install -Dm644 "data/$app_id.desktop" "$pkgdir/usr/share/applications/$app_id.desktop"
+  install -Dm644 "data/icons/$app_id.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/$app_id.svg"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

@@ -1,0 +1,74 @@
+name: Release
+# A pushed v* tag (or a manual run for an existing tag) builds the release
+# tarball and creates a DRAFT GitHub Release. A maintainer reviews the text and
+# publishes it; nothing becomes public automatically.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build, e.g. v2.0.0"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  tarball:
+    # Ubuntu 24.04: GTK 4.14 / libadwaita 1.5 floor, glibc 2.39.
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Tag must match the crate version
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          test "$TAG" = "v$version" || { echo "tag $TAG does not match Cargo.toml version $version"; exit 1; }
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libgtk-4-dev libadwaita-1-dev
+      - run: rustup toolchain install && rustc --version
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace --locked
+      - run: cargo build --release --locked -p kaka
+      - name: Assemble tarball
+        run: |
+          name="kaka-$VERSION-linux-x86_64"
+          app_id=io.github.spaghetticodez.kaka
+          mkdir -p "dist/$name"
+          install -m755 target/release/kaka "dist/$name/kaka"
+          install -m644 "data/$app_id.desktop" "data/icons/$app_id.svg" README.md LICENSE "dist/$name/"
+          # install.sh from the default branch: tags older than the packaging files lack it.
+          git show origin/HEAD:packaging/install.sh > "dist/$name/install.sh"
+          chmod 755 "dist/$name/install.sh"
+          tar -C dist -czf "dist/$name.tar.gz" "$name"
+          (cd dist && sha256sum "$name.tar.gz" > "$name.tar.gz.sha256")
+          echo "ASSET=dist/$name.tar.gz" >> "$GITHUB_ENV"
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git tag -l --format='%(contents)' "$TAG" > notes.md
+          cat >> notes.md <<'EOF'
+
+          ### Install
+          Needs GTK 4.14+ and libadwaita 1.5+ (Arch, Fedora 40+, Debian 13, Ubuntu 24.04+).
+          ```sh
+          tar xzf kaka-*-linux-x86_64.tar.gz && cd kaka-*-linux-x86_64 && ./install.sh
+          ```
+          Arch: `packaging/arch/PKGBUILD` in the repository (`makepkg -si`).
+          EOF
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ASSET" "$ASSET.sha256" --clobber
+          else
+            gh release create "$TAG" --draft --verify-tag --title "KaKa $VERSION" --notes-file notes.md "$ASSET" "$ASSET.sha256"
+          fi

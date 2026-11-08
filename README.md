@@ -52,20 +52,24 @@ cargo build --release --locked
 ./target/release/kaka
 ```
 
-Install for your user (menu entry and icon included):
+Install for your user (menu entry and icon included; `--uninstall` removes them, `--prefix /usr/local`
+with `sudo` installs system-wide):
 
 ```sh
-install -Dm755 target/release/kaka ~/.local/bin/kaka
-install -Dm644 data/io.github.spaghetticodez.kaka.desktop ~/.local/share/applications/io.github.spaghetticodez.kaka.desktop
-install -Dm644 data/icons/io.github.spaghetticodez.kaka.svg ~/.local/share/icons/hicolor/scalable/apps/io.github.spaghetticodez.kaka.svg
+./packaging/install.sh
 ```
 
-The menu entry runs `kaka` from `PATH`. If your desktop session does not have `~/.local/bin` on its
-`PATH`, point the entry at the binary instead:
-`sed -i "s|^Exec=kaka$|Exec=$HOME/.local/bin/kaka|" ~/.local/share/applications/io.github.spaghetticodez.kaka.desktop`.
+**Release tarball:** each release on GitHub has `kaka-<version>-linux-x86_64.tar.gz` (built on
+Ubuntu 24.04; runs where GTK 4.14+, libadwaita 1.5+ and glibc 2.39+ are installed). Unpack it and
+run `./install.sh`.
 
-Packaging (Arch package / AppImage) is not decided yet. A Flatpak is not planned: its sandbox cannot
-see or join the running game's processes.
+**Arch Linux:** `packaging/arch/PKGBUILD` builds the tagged release:
+
+```sh
+cd packaging/arch && makepkg -si
+```
+
+A Flatpak is not planned: its sandbox cannot see or join the running game's processes.
 
 ## Data
 

@@ -1,0 +1,16 @@
+[package]
+name = "kaka-core"
+description = "KaKa core: Proton/Steam discovery, trainer launcher and library storage (no UI)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+rustix.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

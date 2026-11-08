@@ -1,0 +1,27 @@
+[workspace]
+resolver = "3"
+members = ["crates/kaka-core"]
+
+[workspace.package]
+version = "2.0.0"
+edition = "2024"
+rust-version = "1.92"
+license-file = "LICENSE"
+repository = "https://github.com/spaghetticodez/KaKa"
+
+[workspace.dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+rustix = { version = "1.1.6", features = ["process"] }
+tempfile = "3.27.0"
+relm4 = { version = "0.11.0", features = ["libadwaita"] }
+gtk = { package = "gtk4", version = "0.11.5", features = ["v4_14"] }
+adw = { package = "libadwaita", version = "0.9.2", features = ["v1_5"] }
+i18n-embed = { version = "0.16.0", features = ["fluent-system", "desktop-requester"] }
+i18n-embed-fl = "0.10.1"
+rust-embed = "8.13.0"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

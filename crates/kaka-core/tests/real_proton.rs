@@ -386,7 +386,7 @@ fn a_cheat_table_reaches_the_trainer_as_one_z_drive_argument() {
         in_prefix(&prefix).iter().any(|p| {
             marked(p)
                 && p.cmdline.first().is_some_and(|a| is_windows_path(a))
-                && p.cmdline.iter().any(|a| *a == wanted)
+                && p.cmdline.contains(&wanted)
         })
     });
     assert!(

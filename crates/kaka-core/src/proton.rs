@@ -185,6 +185,12 @@ pub fn exe_name(arg: &str) -> String {
     basename(&arg.replace('\\', "/")).to_owned()
 }
 
+/// An absolute host path as Wine sees it through drive `Z:`, which Wine (and
+/// Proton) map to `/`.
+pub fn wine_path(unix_path: &str) -> String {
+    format!("Z:{}", unix_path.replace('/', "\\"))
+}
+
 /// Groups Proton game processes by `STEAM_COMPAT_DATA_PATH`.
 ///
 /// Works for Steam games on any library drive, non-Steam shortcuts and other
@@ -376,6 +382,15 @@ pub fn prefix_in_use(processes: &[ProcessInfo], compat_data_path: &str) -> bool 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn host_paths_become_wine_z_drive_paths() {
+        assert_eq!(
+            wine_path("/home/u/My Tables/x.CT"),
+            r"Z:\home\u\My Tables\x.CT"
+        );
+        assert_eq!(wine_path("/"), r"Z:\");
+    }
 
     fn nul(parts: &[&str]) -> Vec<u8> {
         format!("{}\0", parts.join("\0")).into_bytes()

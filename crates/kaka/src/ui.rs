@@ -317,7 +317,12 @@ impl Ui {
         cover.add_css_class("kaka-cover");
         cover.set_overflow(gtk::Overflow::Hidden);
         cover.set_cursor_from_name(Some("pointer"));
-        cover.set_tooltip_text(Some(&entry.trainer_path));
+        let tip = if entry.table_path.is_empty() {
+            entry.trainer_path.clone()
+        } else {
+            format!("{}\n{}", entry.trainer_path, entry.table_path)
+        };
+        cover.set_tooltip_text(Some(&tip));
         let click = gtk::GestureClick::new();
         let (ui, id) = (Rc::clone(self), entry.id.clone());
         click.connect_released(move |_, _, _, _| ui.launch(&id));

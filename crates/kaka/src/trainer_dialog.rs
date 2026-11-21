@@ -19,6 +19,7 @@ const MAX_NAME_CHARS: i32 = 80;
 struct Paths {
     trainer: String,
     cover: String,
+    table: String,
 }
 
 fn file_name(path: &str) -> String {
@@ -51,6 +52,7 @@ pub fn validate(
     name: &str,
     trainer_path: &str,
     cover: &str,
+    table: &str,
     app_id: &str,
 ) -> Result<TrainerEntry, String> {
     let name = name.trim();
@@ -69,6 +71,22 @@ pub fn validate(
     if !Path::new(trainer_path).is_file() {
         return Err(tr!("trainerPathNotFound", trainerPath = trainer_path));
     }
+    let is_ct = Path::new(table)
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("ct"));
+    if !table.is_empty() && !(is_ct && Path::new(table).is_file()) {
+        return Err(tr!("tableNotFound", tablePath = table));
+    }
+    // Tables only make sense for Cheat Engine itself (cheatengine-x86_64.exe,
+    // -i386, ...). "Cheat Engine.exe" is refused too: it is only a launcher
+    // that exits at once, so KaKa could not track or stop it.
+    let is_cheat_engine = Path::new(trainer_path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(|n| n.to_ascii_lowercase().starts_with("cheatengine"));
+    if !table.is_empty() && !is_cheat_engine {
+        return Err(tr!("tableNeedsCheatEngine"));
+    }
     let mut entry = TrainerEntry::new(
         initial.map_or_else(TrainerEntry::new_id, |e| e.id.clone()),
         name,
@@ -78,6 +96,7 @@ pub fn validate(
     entry.steam_app_id = steam_app_id;
     // Editing keeps where the trainer last ran (for "Reset trainer data").
     entry.last_prefix = initial.map(|e| e.last_prefix.clone()).unwrap_or_default();
+    entry.table_path = table.to_owned();
     Ok(entry)
 }
 
@@ -90,6 +109,10 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
         cover: initial
             .as_ref()
             .map(|e| e.cover_image_path.clone())
+            .unwrap_or_default(),
+        table: initial
+            .as_ref()
+            .map(|e| e.table_path.clone())
             .unwrap_or_default(),
     }));
     let title = if initial.is_some() {
@@ -122,6 +145,21 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
     let files = adw::PreferencesGroup::new();
     files.add(&trainer_row);
     files.add(&running_row);
+
+    // Optional Cheat Engine table.
+    let table_row = row(&tr!("cheatTable"));
+    let clear_table = gtk::Button::builder()
+        .icon_name("edit-clear-symbolic")
+        .valign(gtk::Align::Center)
+        .build();
+    clear_table.add_css_class("flat");
+    let table_button = pick_button();
+    table_row.add_suffix(&clear_table);
+    table_row.add_suffix(&table_button);
+    let table_group = adw::PreferencesGroup::builder()
+        .description(tr!("cheatTableHelp"))
+        .build();
+    table_group.add(&table_row);
 
     // Name, cover.
     let name_row = adw::EntryRow::builder().title(tr!("gameName")).build();
@@ -183,7 +221,7 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
     }
 
     let page = adw::PreferencesPage::new();
-    for group in [&files, &game, &app_id_group, &error_group] {
+    for group in [&files, &table_group, &game, &app_id_group, &error_group] {
         page.add(group);
     }
     let toolbar = adw::ToolbarView::new();
@@ -201,6 +239,8 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
             cover_button.clone(),
             clear_cover.clone(),
         );
+        let (table_row, table_button, clear_table) =
+            (table_row.clone(), table_button.clone(), clear_table.clone());
         Rc::new(move || {
             let p = paths.borrow();
             trainer_row.set_subtitle(&file_name(&p.trainer));
@@ -223,6 +263,15 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
                 tr!("change")
             });
             clear_cover.set_visible(!p.cover.is_empty());
+            table_row.set_subtitle(&file_name(&p.table));
+            table_row
+                .set_tooltip_text(Some(&p.table).filter(|t| !t.is_empty()).map(String::as_str));
+            table_button.set_label(&if p.table.is_empty() {
+                tr!("select")
+            } else {
+                tr!("change")
+            });
+            clear_table.set_visible(!p.table.is_empty());
         })
     };
     sync();
@@ -274,6 +323,26 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
         let (paths, sync) = (paths.clone(), sync.clone());
         clear_cover.connect_clicked(move |_| {
             paths.borrow_mut().cover.clear();
+            sync();
+        });
+    }
+    {
+        let (window, paths, sync) = (ui.window.clone(), paths.clone(), sync.clone());
+        table_button.connect_clicked(move |_| {
+            let filter = gtk::FileFilter::new();
+            filter.set_name(Some(&tr!("cheatTable")));
+            filter.add_suffix("ct"); // case-insensitive
+            let (paths, sync) = (paths.clone(), sync.clone());
+            pick_file(&window, &tr!("cheatTable"), filter, move |path| {
+                paths.borrow_mut().table = path;
+                sync();
+            });
+        });
+    }
+    {
+        let (paths, sync) = (paths.clone(), sync.clone());
+        clear_table.connect_clicked(move |_| {
+            paths.borrow_mut().table.clear();
             sync();
         });
     }
@@ -335,6 +404,7 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
                 &name_row.text(),
                 &p.trainer,
                 &p.cover,
+                &p.table,
                 &app_id_row.text(),
             ) {
                 Ok(entry) => {
@@ -421,23 +491,23 @@ mod tests {
         let path = tmp.to_str().unwrap();
 
         assert_eq!(
-            validate(None, "  ", path, "", ""),
+            validate(None, "  ", path, "", "", ""),
             Err(tr!("requiredFields"))
         );
         assert_eq!(
-            validate(None, "Game", "", "", ""),
+            validate(None, "Game", "", "", "", ""),
             Err(tr!("requiredFields"))
         );
         assert_eq!(
-            validate(None, "Game", path, "", "0"),
+            validate(None, "Game", path, "", "", "0"),
             Err(tr!("invalidAppId"))
         );
         assert_eq!(
-            validate(None, "Game", "/missing/t.exe", "", ""),
+            validate(None, "Game", "/missing/t.exe", "", "", ""),
             Err(tr!("trainerPathNotFound", trainerPath = "/missing/t.exe"))
         );
 
-        let added = validate(None, " Game ", path, "/c.png", "1245620").unwrap();
+        let added = validate(None, " Game ", path, "/c.png", "", "1245620").unwrap();
         assert_eq!(
             (
                 added.name.as_str(),
@@ -450,7 +520,7 @@ mod tests {
 
         let mut old = TrainerEntry::new("keep", "Old", path);
         old.last_prefix = "/compat/1".into();
-        let edited = validate(Some(&old), "New", path, "", "").unwrap();
+        let edited = validate(Some(&old), "New", path, "", "", "").unwrap();
         assert_eq!(
             (
                 edited.id.as_str(),
@@ -459,6 +529,39 @@ mod tests {
             ),
             ("keep", "/compat/1", None)
         );
+
+        assert_eq!(
+            validate(None, "Game", path, "", "/missing/t.CT", ""),
+            Err(tr!("tableNotFound", tablePath = "/missing/t.CT"))
+        );
+        assert_eq!(
+            validate(None, "Game", path, "", path, ""),
+            Err(tr!("tableNotFound", tablePath = path)),
+            "an existing file that is not a .CT is refused"
+        );
+        let ct = std::env::temp_dir().join(format!("kaka_dialog_{}.CT", std::process::id()));
+        std::fs::write(&ct, "<CheatTable/>").unwrap();
+        let ct = ct.to_str().unwrap().to_owned();
+        assert_eq!(
+            validate(None, "Game", path, "", &ct, ""),
+            Err(tr!("tableNeedsCheatEngine")),
+            "a table on a non-CE trainer would just be a stray argument"
+        );
+        let ce_dir = std::env::temp_dir().join(format!("kaka_dialog_ce_{}", std::process::id()));
+        std::fs::create_dir_all(&ce_dir).unwrap();
+        let ce = ce_dir.join("cheatengine-x86_64.exe");
+        let launcher = ce_dir.join("Cheat Engine.exe");
+        std::fs::write(&ce, "MZ").unwrap();
+        std::fs::write(&launcher, "MZ").unwrap();
+        assert_eq!(
+            validate(None, "Game", launcher.to_str().unwrap(), "", &ct, ""),
+            Err(tr!("tableNeedsCheatEngine")),
+            "the CE launcher exits at once; KaKa could not track or stop it"
+        );
+        let with_table = validate(None, "Game", ce.to_str().unwrap(), "", &ct, "").unwrap();
+        assert_eq!(with_table.table_path, ct);
+        std::fs::remove_file(&ct).unwrap();
+        std::fs::remove_dir_all(ce_dir).unwrap();
         std::fs::remove_file(tmp).unwrap();
     }
 }

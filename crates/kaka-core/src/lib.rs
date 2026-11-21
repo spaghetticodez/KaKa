@@ -5,6 +5,7 @@
 //! auto-launches anything, and processes are always started with argument
 //! lists, never through a shell.
 
+pub mod cheat_table;
 pub mod game_info;
 pub mod language;
 pub mod launcher;

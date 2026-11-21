@@ -345,3 +345,34 @@ fn missing_trainer_file_fails_clearly_a_bound_game_that_is_not_running_is_never_
         Err(LaunchError::GameNotRunning)
     );
 }
+
+#[test]
+fn passes_the_cheat_table_as_a_wine_path_argument() {
+    let f = fixture();
+    let table = f.trainers.join("My Table.CT");
+    fs::write(&table, "<CheatTable/>").unwrap();
+    let mut e = f.entry("Trainer.exe", Some(FAKE_APP_ID));
+    e.table_path = table.to_string_lossy().into_owned();
+    f.launcher.launch(&e, &scan_processes()).unwrap();
+
+    let record = fs::read_to_string(f.proton_dir.join("record-Trainer.exe.txt")).unwrap();
+    let expected = format!(
+        "ARGS:runinprefix {} Z:{}",
+        e.trainer_path,
+        e.table_path.replace('/', "\\")
+    );
+    assert!(record.lines().any(|l| l == expected), "{record}");
+}
+
+#[test]
+fn refuses_a_missing_cheat_table() {
+    let f = fixture();
+    let mut e = f.entry("Trainer.exe", Some(FAKE_APP_ID));
+    e.table_path = "/missing/table.CT".into();
+    assert_eq!(
+        f.launcher.resolve_plan(&e, &scan_processes()),
+        Err(LaunchError::TableNotFound {
+            path: "/missing/table.CT".into()
+        })
+    );
+}

@@ -57,6 +57,7 @@ pub fn launch_error_text(error: &LaunchError) -> String {
         LaunchError::TrainerNotFound { path } => {
             tr!("trainerPathNotFound", trainerPath = path.as_str())
         }
+        LaunchError::TableNotFound { path } => tr!("tableNotFound", tablePath = path.as_str()),
         LaunchError::GameNotRunning => tr!("gameNotRunning"),
         LaunchError::MultipleGames { games } => {
             let list = games
@@ -127,6 +128,12 @@ mod tests {
                     path: "/t/x.exe".into(),
                 },
                 "/t/x.exe",
+            ),
+            (
+                LaunchError::TableNotFound {
+                    path: "/t/x.CT".into(),
+                },
+                "/t/x.CT",
             ),
             (LaunchError::GameNotRunning, "Start the game first"),
             (

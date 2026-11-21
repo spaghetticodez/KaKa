@@ -91,3 +91,10 @@ chooseGame = 选择游戏
 quit = 退出
 about = 关于 KaKa
 moreActions = 更多操作
+cheatTable = Cheat Engine 表（.CT，可选）
+cheatTableHelp = 要使用表，请选择 Cheat Engine 的 cheatengine-x86_64.exe 作为修改器：KaKa 会用它打开该表。表中可能包含以你的用户权限运行的 Lua 和自动汇编脚本，请只使用你信任的表。
+tableNotFound =
+    未找到作弊表，或不是 .CT 文件。
+
+    路径：{ $tablePath }
+tableNeedsCheatEngine = 表只能配合 Cheat Engine 使用：请从 Cheat Engine 文件夹中选择 cheatengine-x86_64.exe 作为修改器（不要选“Cheat Engine.exe”，它只会启动前者然后退出）。

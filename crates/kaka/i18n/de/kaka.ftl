@@ -91,3 +91,10 @@ chooseGame = Welches Spiel?
 quit = Beenden
 about = Über KaKa
 moreActions = Weitere Aktionen
+cheatTable = Cheat-Engine-Tabelle (.CT, optional)
+cheatTableHelp = Für eine Tabelle wähle die cheatengine-x86_64.exe von Cheat Engine als Trainer: KaKa öffnet die Tabelle darin. Tabellen können Lua- und Auto-Assembler-Skripte enthalten, die mit deinen Benutzerrechten laufen. Nutze nur Tabellen, denen du vertraust.
+tableNotFound =
+    Cheat-Tabelle nicht gefunden oder keine .CT-Datei.
+
+    Pfad: { $tablePath }
+tableNeedsCheatEngine = Eine Tabelle funktioniert nur mit Cheat Engine: Wähle cheatengine-x86_64.exe aus dem Cheat-Engine-Ordner als Trainer (nicht „Cheat Engine.exe“, das nur die andere startet und sich beendet).

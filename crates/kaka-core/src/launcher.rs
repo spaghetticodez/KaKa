@@ -19,7 +19,7 @@ use crate::model::TrainerEntry;
 use crate::proton::{
     ProcessInfo, TRAINER_ID_ENV, TRAINER_MARKER_ENV, detect_running_games, dirname,
     find_steam_root, is_trainer_process, match_game, proton_dir_from_config_info, scan_processes,
-    trainer_verb,
+    trainer_verb, wine_path,
 };
 use crate::storage::{home_dir, xdg_dir};
 
@@ -42,6 +42,10 @@ pub struct LaunchPlan {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LaunchError {
     TrainerNotFound {
+        path: String,
+    },
+    /// The entry's Cheat Engine table file is missing.
+    TableNotFound {
         path: String,
     },
     /// No running Proton game (or not the one the trainer is bound to).
@@ -98,6 +102,16 @@ pub enum LauncherEvent {
 }
 
 pub type EventHandler = Arc<dyn Fn(LauncherEvent) + Send + Sync>;
+
+/// Arguments after the trainer executable: the Cheat Engine table, if any.
+/// Cheat Engine loads a table given on its command line.
+pub fn trainer_args(entry: &TrainerEntry) -> Vec<String> {
+    if entry.table_path.is_empty() {
+        Vec::new()
+    } else {
+        vec![wine_path(&entry.table_path)]
+    }
+}
 
 /// `$XDG_STATE_HOME/kaka/logs` (default `~/.local/state/kaka/logs`).
 pub fn default_log_dir() -> PathBuf {
@@ -201,6 +215,11 @@ impl Launcher {
                 path: entry.trainer_path.clone(),
             });
         }
+        if !entry.table_path.is_empty() && !Path::new(&entry.table_path).is_file() {
+            return Err(LaunchError::TableNotFound {
+                path: entry.table_path.clone(),
+            });
+        }
 
         let games = detect_running_games(processes);
         // The game must already run. Starting a trainer first does not work with
@@ -279,8 +298,8 @@ impl Launcher {
         let (_, iso) = utc_stamp(SystemTime::now());
         writeln!(
             log,
-            "# KaKa trainer launch {iso}\n# trainer: {}\n# proton:  {} {}\n# prefix:  {}\n# steam:   {}",
-            entry.trainer_path, plan.proton_script, plan.verb, plan.compat_data_path, plan.client_install_path
+            "# KaKa trainer launch {iso}\n# trainer: {}\n# table:   {}\n# proton:  {} {}\n# prefix:  {}\n# steam:   {}",
+            entry.trainer_path, entry.table_path, plan.proton_script, plan.verb, plan.compat_data_path, plan.client_install_path
         )
         .map_err(spawn_error)?;
 
@@ -289,6 +308,7 @@ impl Launcher {
         let mut child = match Command::new(&plan.proton_script)
             .arg(plan.verb)
             .arg(&entry.trainer_path)
+            .args(trainer_args(entry))
             // Trainers often load files next to themselves.
             .current_dir(dirname(&entry.trainer_path))
             .env(

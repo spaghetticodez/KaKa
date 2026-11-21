@@ -91,3 +91,10 @@ chooseGame = Which game?
 quit = Quit
 about = About KaKa
 moreActions = More actions
+cheatTable = Cheat Engine table (.CT, optional)
+cheatTableHelp = To use a table, pick Cheat Engine's cheatengine-x86_64.exe as the trainer: KaKa opens the table in it. Tables can contain Lua and Auto Assembler scripts that run with your user rights. Only use tables you trust.
+tableNotFound =
+    Cheat table not found or not a .CT file.
+
+    Path: { $tablePath }
+tableNeedsCheatEngine = A table only works with Cheat Engine: pick cheatengine-x86_64.exe from the Cheat Engine folder as the trainer (not "Cheat Engine.exe", which only starts the other and exits).

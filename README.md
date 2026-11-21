@@ -36,6 +36,12 @@ trainer closes. KaKa therefore refuses to launch a trainer when its game is not 
 
 When KaKa is closed, it stops the trainers it started (only those — the game and its Wine services keep running).
 
+## Cheat Engine tables
+
+KaKa can also open a Cheat Engine table (`.CT`) in the running game, with your own Cheat Engine: pick
+`cheatengine-x86_64.exe` as the trainer and the table under **Cheat Engine table**. KaKa shows what the
+table contains before you save it. Setup and safety notes: [Cheat Engine tables](docs/cheat_engine.md).
+
 ## Build and install
 
 Needs Rust (via [rustup](https://rustup.rs); the toolchain is pinned in `rust-toolchain.toml`), a C
@@ -106,6 +112,7 @@ are imported once. LaLa online-catalogue entries are skipped. The LaLa files are
 Trainers are Windows programs that modify game memory. KaKa runs whatever `.exe` you add, with your
 user's permissions (Wine maps your whole filesystem as drive `Z:`). Only add trainers from sources you
 trust, and never use them in online or anti-cheat protected games.
+Cheat Engine tables are programs too: their scripts run with your user rights.
 
 ## License and credits
 

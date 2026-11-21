@@ -43,6 +43,19 @@ fn row(title: &str) -> adw::ActionRow {
     row
 }
 
+/// Icon-only "clear" button, named for tooltips and screen readers.
+fn clear_button() -> gtk::Button {
+    let button = gtk::Button::builder()
+        .icon_name("edit-clear-symbolic")
+        .valign(gtk::Align::Center)
+        .build();
+    button.add_css_class("flat");
+    let label = tr!("remove");
+    button.set_tooltip_text(Some(&label));
+    button.update_property(&[gtk::accessible::Property::Label(&label)]);
+    button
+}
+
 fn pick_button() -> gtk::Button {
     gtk::Button::builder().valign(gtk::Align::Center).build()
 }
@@ -183,11 +196,7 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
 
     // Optional Cheat Engine table.
     let table_row = row(&tr!("cheatTable"));
-    let clear_table = gtk::Button::builder()
-        .icon_name("edit-clear-symbolic")
-        .valign(gtk::Align::Center)
-        .build();
-    clear_table.add_css_class("flat");
+    let clear_table = clear_button();
     let table_button = pick_button();
     table_row.add_suffix(&clear_table);
     table_row.add_suffix(&table_button);
@@ -242,11 +251,7 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
         text.set_max_length(MAX_NAME_CHARS);
     }
     let cover_row = row(&tr!("gameCover"));
-    let clear_cover = gtk::Button::builder()
-        .icon_name("edit-clear-symbolic")
-        .valign(gtk::Align::Center)
-        .build();
-    clear_cover.add_css_class("flat");
+    let clear_cover = clear_button();
     let cover_button = pick_button();
     cover_row.add_suffix(&clear_cover);
     cover_row.add_suffix(&cover_button);

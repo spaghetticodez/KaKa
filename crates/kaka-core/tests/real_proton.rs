@@ -340,3 +340,60 @@ fn running_game_kaka_detects_it_joins_its_prefix_and_stops_only_the_trainer() {
         "stopping trainers must not touch the game"
     );
 }
+
+#[test]
+#[ignore = "needs a real Proton build (KAKA_REAL_PROTON)"]
+fn a_cheat_table_reaches_the_trainer_as_one_z_drive_argument() {
+    let Some(proton) = proton() else { return };
+    let tmp = tempfile::Builder::new()
+        .prefix("kaka_real_table_")
+        .tempdir()
+        .unwrap();
+    let prefix = tmp
+        .path()
+        .join("compatdata/444444")
+        .to_string_lossy()
+        .into_owned();
+    fs::create_dir_all(&prefix).unwrap();
+    // cmd.exe stands in for cheatengine-x86_64.exe; it ignores the argument and
+    // stays up on its open stdin.
+    let trainer = copy_cmd(&proton, &tmp.path().join("ce"), "cmd.exe");
+    let tables = tmp.path().join("my tables");
+    fs::create_dir_all(&tables).unwrap();
+    let table = tables.join("x.CT");
+    fs::write(&table, "<CheatTable/>").unwrap();
+    let logs = tmp.path().join("logs");
+    let wanted = format!("Z:{}", table.to_string_lossy().replace('/', "\\"));
+    let _cleanup = Cleanup {
+        prefix: prefix.clone(),
+        game: None,
+        _tmp: tmp,
+    };
+
+    let mut entry = TrainerEntry::new("table", "Table", trainer.to_string_lossy());
+    entry.table_path = table.to_string_lossy().into_owned();
+    let launcher = Launcher::new(&logs, Duration::from_secs(4));
+    let plan = LaunchPlan {
+        proton_script: proton,
+        compat_data_path: prefix.clone(),
+        client_install_path: env("KAKA_STEAM_ROOT"),
+        // A fresh prefix: `run` creates it (runinprefix needs an existing one).
+        verb: "run",
+    };
+    launcher.start(&entry, &plan).unwrap();
+
+    let passed = wait_for(Duration::from_secs(180), || {
+        in_prefix(&prefix).iter().any(|p| {
+            marked(p)
+                && p.cmdline.first().is_some_and(|a| is_windows_path(a))
+                && p.cmdline.iter().any(|a| *a == wanted)
+        })
+    });
+    assert!(
+        passed,
+        "want one argument {wanted}\n{}\nlog:\n{}",
+        describe(&prefix),
+        only_log(&logs)
+    );
+    launcher.stop_all();
+}

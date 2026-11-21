@@ -21,6 +21,7 @@ async-channel = "2.5.0"
 i18n-embed = { version = "0.16.0", features = ["fluent-system"] }
 i18n-embed-fl = "0.10.1"
 rust-embed = "8.13.0"
+roxmltree = "0.21.2"
 
 [profile.release]
 lto = "thin"

@@ -22,6 +22,9 @@ pub struct TrainerEntry {
     /// trainer data can be reset there while the game is not running. Empty if
     /// the trainer was never launched.
     pub last_prefix: String,
+    /// Optional Cheat Engine table (`.CT`), passed to the trainer as its only
+    /// argument (as a Wine `Z:` path). Empty for plain trainers.
+    pub table_path: String,
 }
 
 /// Field order and names of `library.json` entries (KaKa 1.x compatible).
@@ -33,6 +36,13 @@ struct EntryJson<'a> {
     cover_image_path: &'a str,
     steam_app_id: Option<u64>,
     last_prefix: &'a str,
+    // Not written when empty: KaKa 1.x / 2.0 files re-save byte-identically.
+    #[serde(skip_serializing_if = "is_empty")]
+    table_path: &'a str,
+}
+
+fn is_empty(s: &&str) -> bool {
+    s.is_empty()
 }
 
 impl TrainerEntry {
@@ -48,6 +58,7 @@ impl TrainerEntry {
             cover_image_path: String::new(),
             steam_app_id: None,
             last_prefix: String::new(),
+            table_path: String::new(),
         }
     }
 
@@ -101,6 +112,7 @@ impl TrainerEntry {
                 .and_then(Value::as_u64)
                 .filter(|&n| n > 0),
             last_prefix: string("last_prefix"),
+            table_path: string("table_path"),
         })
     }
 
@@ -116,6 +128,7 @@ impl TrainerEntry {
             cover_image_path: &self.cover_image_path,
             steam_app_id: self.steam_app_id,
             last_prefix: &self.last_prefix,
+            table_path: &self.table_path,
         }
     }
 }
@@ -192,10 +205,24 @@ mod tests {
             cover_image_path: "/t/cover.png".into(),
             steam_app_id: Some(1245620),
             last_prefix: "/c/1245620".into(),
+            table_path: "/t/table.CT".into(),
         };
         let text = serde_json::to_string(&entry.to_json()).unwrap();
         let restored = TrainerEntry::from_json(&serde_json::from_str(&text).unwrap()).unwrap();
         assert_eq!(restored, entry);
+    }
+
+    #[test]
+    fn table_path_is_saved_only_when_set() {
+        let mut entry = TrainerEntry::new("a", "A", "/t/cheatengine-x86_64.exe");
+        assert!(
+            !library_to_json(std::slice::from_ref(&entry)).contains("table_path"),
+            "entries without a table keep the KaKa 1.x format"
+        );
+        entry.table_path = "/t/x.CT".into();
+        let json = entry.to_json();
+        assert_eq!(json["table_path"], "/t/x.CT");
+        assert_eq!(TrainerEntry::from_json(&json).unwrap(), entry);
     }
 
     #[test]

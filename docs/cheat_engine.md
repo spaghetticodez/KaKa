@@ -5,8 +5,12 @@ KaKa never downloads Cheat Engine or tables, and never reads or writes game memo
 
 ## Setup
 
-1. Download Cheat Engine for Windows from cheatengine.org (GitHub has no binaries). The installer offers
-   extra software: decline it. Install it with Proton into any spare prefix, for example:
+1. Download Cheat Engine **for Windows** from cheatengine.org (GitHub has no binaries). Use the Windows
+   build even on Linux: KaKa runs it inside the game's Proton prefix, where Wine lets it read the game's
+   memory without changing any system security setting. The native Linux build of Cheat Engine is not
+   supported: it needs `kernel.yama.ptrace_scope=0` or root to read game memory. If the site only offers
+   the newest version for Linux and Mac, the Windows build is on Cheat Engine's Patreon or follows later.
+   The installer offers extra software: decline it. Install it with Proton into any spare prefix, for example:
 
    ```sh
    mkdir -p ~/.local/share/kaka-ce

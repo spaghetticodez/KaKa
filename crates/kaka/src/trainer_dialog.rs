@@ -100,7 +100,17 @@ pub fn validate(
     Ok(entry)
 }
 
+/// Cheat Engine of the most recently used entry with a table, if that file
+/// still exists (the library lists the most recently launched first).
+pub fn cheat_engine_hint(entries: &[TrainerEntry]) -> Option<String> {
+    entries
+        .iter()
+        .find(|e| !e.table_path.is_empty() && Path::new(&e.trainer_path).is_file())
+        .map(|e| e.trainer_path.clone())
+}
+
 pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(TrainerEntry) + 'static) {
+    let ce_hint = cheat_engine_hint(&ui.library.trainers());
     let paths = Rc::new(RefCell::new(Paths {
         trainer: initial
             .as_ref()
@@ -327,14 +337,37 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
         });
     }
     {
-        let (window, paths, sync) = (ui.window.clone(), paths.clone(), sync.clone());
+        let (window, paths, sync, name_row) = (
+            ui.window.clone(),
+            paths.clone(),
+            sync.clone(),
+            name_row.clone(),
+        );
         table_button.connect_clicked(move |_| {
             let filter = gtk::FileFilter::new();
             filter.set_name(Some(&tr!("cheatTable")));
             filter.add_suffix("ct"); // case-insensitive
-            let (paths, sync) = (paths.clone(), sync.clone());
+            let (paths, sync, name_row, ce_hint) = (
+                paths.clone(),
+                sync.clone(),
+                name_row.clone(),
+                ce_hint.clone(),
+            );
             pick_file(&window, &tr!("cheatTable"), filter, move |path| {
-                paths.borrow_mut().table = path;
+                {
+                    let mut p = paths.borrow_mut();
+                    if p.trainer.is_empty()
+                        && let Some(ce) = &ce_hint
+                    {
+                        p.trainer = ce.clone();
+                    }
+                    if name_row.text().trim().is_empty()
+                        && let Some(stem) = Path::new(&path).file_stem()
+                    {
+                        name_row.set_text(&stem.to_string_lossy());
+                    }
+                    p.table = path;
+                }
                 sync();
             });
         });
@@ -481,6 +514,27 @@ pub fn pick_folder(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn new_table_entries_start_with_the_last_cheat_engine() {
+        let dir = std::env::temp_dir().join(format!("kaka_hint_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let ce = dir.join("cheatengine-x86_64.exe");
+        std::fs::write(&ce, "MZ").unwrap();
+        let ce = ce.to_str().unwrap();
+        let plain = TrainerEntry::new("a", "A", ce);
+        let mut gone = TrainerEntry::new("b", "B", "/missing/cheatengine-x86_64.exe");
+        gone.table_path = "/t/b.CT".into();
+        let mut table = TrainerEntry::new("c", "C", ce);
+        table.table_path = "/t/c.CT".into();
+        assert_eq!(
+            cheat_engine_hint(&[plain.clone(), gone.clone(), table]),
+            Some(ce.to_owned()),
+            "plain trainers and missing files are skipped"
+        );
+        assert_eq!(cheat_engine_hint(&[plain, gone]), None);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
 
     #[test]
     fn validation_rules_match_the_flutter_dialog() {

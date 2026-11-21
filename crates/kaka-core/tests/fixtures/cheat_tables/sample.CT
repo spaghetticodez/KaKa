@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="45">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>0</ID>
+      <Description>"Player"</Description>
+      <Options moHideChildren="1"/>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>1</ID>
+          <Description>"Health"</Description>
+          <VariableType>Float</VariableType>
+          <Address>"Game.exe"+01A2B3C0</Address>
+          <Offsets>
+            <Offset>1C</Offset>
+            <Offset>8</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>2</ID>
+          <Description>"Gold"</Description>
+          <ShowAsSigned>1</ShowAsSigned>
+          <VariableType>4 Bytes</VariableType>
+          <Address>Game.exe+2000</Address>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>3</ID>
+          <Description>"Difficulty"</Description>
+          <DropDownList DisplayValueAsItem="1">0:Easy
+1:Normal
+2:Hard
+</DropDownList>
+          <VariableType>Byte</VariableType>
+          <Address>Game.exe+2010</Address>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>4</ID>
+      <Description>"Infinite ammo"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>[ENABLE]
+aobscanmodule(ammo,Game.exe,89 47 10 48 8B)
+registersymbol(ammo)
+ammo:
+  db 90 90 90
+[DISABLE]
+ammo:
+  db 89 47 10
+unregistersymbol(ammo)
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>5</ID>
+      <Description>"Flags"</Description>
+      <VariableType>Binary</VariableType>
+      <BitStart>0</BitStart>
+      <BitLength>1</BitLength>
+      <Address>Game.exe+2020</Address>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+  <LuaScript>print("hello")
+</LuaScript>
+</CheatTable>

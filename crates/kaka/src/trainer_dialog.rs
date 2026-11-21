@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 use adw::prelude::*;
 use gtk::gio;
+use kaka_core::cheat_table::{self, CheatTable, TableError};
 use kaka_core::game_info::GameSuggestion;
 use kaka_core::model::TrainerEntry;
 
@@ -109,6 +110,30 @@ pub fn cheat_engine_hint(entries: &[TrainerEntry]) -> Option<String> {
         .map(|e| e.trainer_path.clone())
 }
 
+/// One summary for a picked table, and whether it needs the warning style.
+pub fn table_summary(table: &Result<CheatTable, TableError>) -> (String, bool) {
+    match table {
+        Ok(t) => {
+            let stats = t.stats();
+            let mut text = tr!(
+                "tableStats",
+                addresses = stats.addresses.to_string(),
+                scripts = stats.scripts.to_string(),
+                groups = stats.groups.to_string()
+            );
+            let scripts = t.script_count();
+            if scripts > 0 {
+                text = format!(
+                    "{text}\n{}",
+                    tr!("tableHasScripts", count = scripts.to_string())
+                );
+            }
+            (text, scripts > 0)
+        }
+        Err(e) => (tr!("tableParseFailed", error = e.to_string()), true),
+    }
+}
+
 pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(TrainerEntry) + 'static) {
     let ce_hint = cheat_engine_hint(&ui.library.trainers());
     let paths = Rc::new(RefCell::new(Paths {
@@ -170,6 +195,43 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
         .description(tr!("cheatTableHelp"))
         .build();
     table_group.add(&table_row);
+    // Table text is untrusted: a plain label never interprets Pango markup.
+    let summary = gtk::Label::builder()
+        .wrap(true)
+        .xalign(0.0)
+        .visible(false)
+        .margin_top(6)
+        .build();
+    table_group.add(&summary);
+    // Parses off the UI thread; a result for a table that is no longer picked is dropped.
+    let show_summary: Rc<dyn Fn()> = {
+        let (ui, summary, paths) = (ui.clone(), summary.clone(), paths.clone());
+        Rc::new(move || {
+            let table = paths.borrow().table.clone();
+            summary.set_visible(!table.is_empty());
+            if table.is_empty() {
+                return;
+            }
+            let (summary, paths) = (summary.clone(), paths.clone());
+            let path = table.clone();
+            ui.background(
+                move |_| cheat_table::load(Path::new(&path)),
+                move |_, result| {
+                    if paths.borrow().table != table {
+                        return;
+                    }
+                    let (text, warn) = table_summary(&result);
+                    summary.set_label(&text);
+                    if warn {
+                        summary.add_css_class("warning");
+                    } else {
+                        summary.remove_css_class("warning");
+                    }
+                },
+            );
+        })
+    };
+    show_summary();
 
     // Name, cover.
     let name_row = adw::EntryRow::builder().title(tr!("gameName")).build();
@@ -337,21 +399,23 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
         });
     }
     {
-        let (window, paths, sync, name_row) = (
+        let (window, paths, sync, name_row, show_summary) = (
             ui.window.clone(),
             paths.clone(),
             sync.clone(),
             name_row.clone(),
+            show_summary.clone(),
         );
         table_button.connect_clicked(move |_| {
             let filter = gtk::FileFilter::new();
             filter.set_name(Some(&tr!("cheatTable")));
             filter.add_suffix("ct"); // case-insensitive
-            let (paths, sync, name_row, ce_hint) = (
+            let (paths, sync, name_row, ce_hint, show_summary) = (
                 paths.clone(),
                 sync.clone(),
                 name_row.clone(),
                 ce_hint.clone(),
+                show_summary.clone(),
             );
             pick_file(&window, &tr!("cheatTable"), filter, move |path| {
                 {
@@ -369,14 +433,16 @@ pub fn open(ui: &Rc<Ui>, initial: Option<TrainerEntry>, on_save: impl Fn(Trainer
                     p.table = path;
                 }
                 sync();
+                show_summary();
             });
         });
     }
     {
-        let (paths, sync) = (paths.clone(), sync.clone());
+        let (paths, sync, show_summary) = (paths.clone(), sync.clone(), show_summary.clone());
         clear_table.connect_clicked(move |_| {
             paths.borrow_mut().table.clear();
             sync();
+            show_summary();
         });
     }
     {
@@ -514,6 +580,26 @@ pub fn pick_folder(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn table_summary_counts_and_warns_about_scripts() {
+        let _guard = crate::i18n::test_lock();
+        crate::i18n::set_locale("en");
+        let plain = cheat_table::parse(
+            r#"<CheatTable><CheatEntries><CheatEntry><Description>"Gold"</Description><VariableType>4 Bytes</VariableType><Address>Game.exe+10</Address></CheatEntry></CheatEntries></CheatTable>"#,
+        );
+        assert_eq!(
+            table_summary(&plain),
+            ("1 values · 0 scripts · 0 groups".to_owned(), false)
+        );
+        let lua = cheat_table::parse(
+            "<CheatTable><CheatEntries/><LuaScript>print(1)</LuaScript></CheatTable>",
+        );
+        let (text, warn) = table_summary(&lua);
+        assert!(warn && text.contains("1 script(s)"), "{text}");
+        let (text, warn) = table_summary(&cheat_table::parse("<html/>"));
+        assert!(warn && text.contains("not a Cheat Engine table"), "{text}");
+    }
 
     #[test]
     fn new_table_entries_start_with_the_last_cheat_engine() {

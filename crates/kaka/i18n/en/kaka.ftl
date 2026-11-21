@@ -98,3 +98,6 @@ tableNotFound =
 
     Path: { $tablePath }
 tableNeedsCheatEngine = A table only works with Cheat Engine: pick cheatengine-x86_64.exe from the Cheat Engine folder as the trainer (not "Cheat Engine.exe", which only starts the other and exits).
+tableStats = { $addresses } values · { $scripts } scripts · { $groups } groups
+tableHasScripts = This table contains { $count } script(s). Cheat Engine runs them with your user rights; Wine is not a sandbox.
+tableParseFailed = Could not read the table: { $error }

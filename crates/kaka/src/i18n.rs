@@ -72,7 +72,7 @@ mod tests {
     #[test]
     fn every_language_has_exactly_the_english_keys() {
         let en = keys("en");
-        assert_eq!(en.len(), 61);
+        assert_eq!(en.len(), 64);
         for locale in ["de", "zh"] {
             assert_eq!(keys(locale), en, "{locale}");
         }

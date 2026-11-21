@@ -98,3 +98,6 @@ tableNotFound =
 
     路径：{ $tablePath }
 tableNeedsCheatEngine = 表只能配合 Cheat Engine 使用：请从 Cheat Engine 文件夹中选择 cheatengine-x86_64.exe 作为修改器（不要选“Cheat Engine.exe”，它只会启动前者然后退出）。
+tableStats = { $addresses } 个数值 · { $scripts } 个脚本 · { $groups } 个分组
+tableHasScripts = 此表包含 { $count } 个脚本。Cheat Engine 会以你的用户权限运行它们；Wine 不是沙盒。
+tableParseFailed = 无法读取该表：{ $error }
